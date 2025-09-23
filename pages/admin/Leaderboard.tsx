@@ -34,6 +34,123 @@ function parseTimeString(timeStr: string) {
   return (mm || 0) * 60000 + (ss || 0) * 1000 + (ms || 0);
 }
 
+// Helper function to determine if scoring is complete based on category
+function isScoringComplete(teamData: any, category: string): boolean {
+  if (!teamData || !category) return false;
+
+  const categoryLower = category.toLowerCase();
+
+  // Robo categories (elem, jr, sr) - NEW: Check both days
+  if (categoryLower.includes('robo-elem') || categoryLower.includes('robo-junior') || categoryLower.includes('robo-senior')) {
+    // Day 1 must be complete (all 3 rounds)
+    const day1Complete = teamData.day1Round1Score != null && 
+                        teamData.day1Round2Score != null && 
+                        teamData.day1Round3Score != null;
+    
+    // Day 2 must be complete (all 3 rounds)
+    const day2Complete = teamData.day2Round1Score != null && 
+                        teamData.day2Round2Score != null && 
+                        teamData.day2Round3Score != null;
+    
+    return day1Complete && day2Complete;
+  }
+
+  // Robosports - placeholder for future alterations
+  if (categoryLower.includes('robosports')) {
+    // Currently using same logic as robo categories, but structured for easy modification
+    return teamData.round1Score != null && teamData.round2Score != null;
+  }
+
+  // FI categories (elem, jr, sr)
+  if (categoryLower.includes('fi-elem') || categoryLower.includes('fi-junior') || categoryLower.includes('fi-senior')) {
+    // All three components must be present
+    return teamData.presentationSpirit != null && 
+           teamData.projectInnovation != null && 
+           teamData.roboticSolution != null;
+  }
+
+  // Future Engineering
+  if (categoryLower.includes('future eng') || categoryLower.includes('future-eng')) {
+    // All four rounds must be filled
+    return teamData.openScore1 != null && 
+           teamData.openScore2 != null && 
+           teamData.obstacleScore1 != null && 
+           teamData.obstacleScore2 != null;
+  }
+
+  // Default fallback for unknown categories
+  return teamData.round1Score != null && teamData.round2Score != null;
+}
+
+// Helper function to get completion status for a team based on category
+function getTeamCompletionData(teamData: any, category: string) {
+  const categoryLower = category.toLowerCase();
+
+  if (categoryLower.includes('robo-elem') || categoryLower.includes('robo-junior') || categoryLower.includes('robo-senior')) {
+    // NEW: Day 1 and Day 2 completion tracking
+    const day1Complete = teamData.day1Round1Score != null && 
+                         teamData.day1Round2Score != null && 
+                         teamData.day1Round3Score != null;
+    
+    const day2Complete = teamData.day2Round1Score != null && 
+                         teamData.day2Round2Score != null && 
+                         teamData.day2Round3Score != null;
+
+    return {
+      hasDay1Round1: teamData.day1Round1Score != null,
+      hasDay1Round2: teamData.day1Round2Score != null,
+      hasDay1Round3: teamData.day1Round3Score != null,
+      hasDay2Round1: teamData.day2Round1Score != null,
+      hasDay2Round2: teamData.day2Round2Score != null,
+      hasDay2Round3: teamData.day2Round3Score != null,
+      day1Complete,
+      day2Complete,
+      isComplete: day1Complete && day2Complete
+    };
+  }
+
+  if (categoryLower.includes('robosports')) {
+    return {
+      hasRound1: teamData.round1Score != null,
+      hasRound2: teamData.round2Score != null,
+      isComplete: teamData.round1Score != null && teamData.round2Score != null
+    };
+  }
+
+  if (categoryLower.includes('fi-elem') || categoryLower.includes('fi-junior') || categoryLower.includes('fi-senior')) {
+    return {
+      hasPresentationSpirit: teamData.presentationSpirit != null,
+      hasProjectInnovation: teamData.projectInnovation != null,
+      hasRoboticSolution: teamData.roboticSolution != null,
+      isComplete: teamData.presentationSpirit != null && 
+                  teamData.projectInnovation != null && 
+                  teamData.roboticSolution != null
+    };
+  }
+
+  if (categoryLower.includes('future eng') || categoryLower.includes('future-eng')) {
+    return {
+      hasOpenRound1: teamData.openScore1 != null,
+      hasOpenRound2: teamData.openScore2 != null,
+      hasObstacleRound1: teamData.obstacleScore1 != null,
+      hasObstacleRound2: teamData.obstacleScore2 != null,
+      hasDocScore: teamData.docScore != null,
+      isComplete: teamData.openScore1 != null && 
+                  teamData.openScore2 != null && 
+                  teamData.obstacleScore1 != null && 
+                  teamData.obstacleScore2 != null &&
+                  teamData.docScore != null
+    };
+  }
+
+  // Default fallback
+  return {
+    hasRound1: teamData.round1Score != null,
+    hasRound2: teamData.round2Score != null,
+    isComplete: teamData.round1Score != null && teamData.round2Score != null
+  };
+}
+
 export default function Leaderboard({ navigation }: any) {
   const [allLeaderboard, setAllLeaderboard] = useState<any[]>([]);
   const [scoresLoading, setScoresLoading] = useState(true);
@@ -48,6 +165,12 @@ export default function Leaderboard({ navigation }: any) {
   const [selectedEvent, setSelectedEvent] = useState<string>("all");
   const [eventDropdownOpen, setEventDropdownOpen] = useState(false);
 
+// Status tracking states
+  const [totalTeams, setTotalTeams] = useState<number>(0);
+  const [scoredTeams, setScoredTeams] = useState<number>(0);
+  const [completeTeams, setCompleteTeams] = useState<number>(0);
+  const [scoringStatus, setScoringStatus] = useState<string>("");
+  
   useLayoutEffect(() => {
     navigation.setOptions({
       headerLeft: () => (
@@ -404,6 +527,8 @@ export default function Leaderboard({ navigation }: any) {
                   >
                     {item.bestScore} pts
                   </Text>
+                  
+
                   <Text
                     style={{
                       color: textColor,

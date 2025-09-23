@@ -57,32 +57,126 @@ export default function ScoreCard({
 
   const renderRoboCategoryScores = () => (
     <>
+      {/* Day 1 Scores Section */}
+      <View style={styles.row}>
+        <Text style={[styles.label, { fontSize: 16, fontWeight: "bold", color: "#2d5a3d" }]}>
+          Day 1 Rounds
+        </Text>
+      </View>
       <View style={styles.row}>
         <Text style={styles.label}>Round 1 Score:</Text>
-        <Text style={styles.value}>{score.round1Score ?? "N/A"}</Text>
+        <Text style={styles.value}>{score.day1Round1Score ?? "N/A"}</Text>
       </View>
       <View style={styles.row}>
         <Text style={[styles.label, { fontWeight: "normal" }]}>Time 1:</Text>
-        <Text style={styles.value}>{score.time1 ?? "N/A"}</Text>
+        <Text style={styles.value}>{score.day1Round1Time ?? "N/A"}</Text>
       </View>
       <View style={styles.row}>
         <Text style={[styles.label, { fontWeight: "normal" }]}>Scored At:</Text>
         <Text style={styles.value}>
-          {formatDate(score.round1ScoredAt ?? score.timestamp)}
+          {formatDate(score.day1Round1ScoredAt ?? score.timestamp)}
         </Text>
       </View>
-      <View style={styles.divider} />
+      
       <View style={styles.row}>
         <Text style={styles.label}>Round 2 Score:</Text>
-        <Text style={styles.value}>{score.round2Score ?? "N/A"}</Text>
+        <Text style={styles.value}>{score.day1Round2Score ?? "N/A"}</Text>
       </View>
       <View style={styles.row}>
         <Text style={[styles.label, { fontWeight: "normal" }]}>Time 2:</Text>
-        <Text style={styles.value}>{score.time2 ?? "N/A"}</Text>
+        <Text style={styles.value}>{score.day1Round2Time ?? "N/A"}</Text>
       </View>
       <View style={styles.row}>
         <Text style={[styles.label, { fontWeight: "normal" }]}>Scored At:</Text>
-        <Text style={styles.value}>{formatDate(score.round2ScoredAt)}</Text>
+        <Text style={styles.value}>{formatDate(score.day1Round2ScoredAt)}</Text>
+      </View>
+
+      <View style={styles.row}>
+        <Text style={styles.label}>Round 3 Score:</Text>
+        <Text style={styles.value}>{score.day1Round3Score ?? "N/A"}</Text>
+      </View>
+      <View style={styles.row}>
+        <Text style={[styles.label, { fontWeight: "normal" }]}>Time 3:</Text>
+        <Text style={styles.value}>{score.day1Round3Time ?? "N/A"}</Text>
+      </View>
+      <View style={styles.row}>
+        <Text style={[styles.label, { fontWeight: "normal" }]}>Scored At:</Text>
+        <Text style={styles.value}>{formatDate(score.day1Round3ScoredAt)}</Text>
+      </View>
+
+      {/* Day 1 Best Score */}
+      <View style={styles.row}>
+        <Text style={[styles.label, { fontWeight: "bold", color: "#2d5a3d" }]}>Day 1 Best Score:</Text>
+        <Text style={[styles.value, { fontWeight: "bold", color: "#2d5a3d" }]}>
+          {score.breakdown?.day1BestScore ?? "N/A"}
+        </Text>
+      </View>
+
+      <View style={styles.divider} />
+
+      {/* Day 2 Scores Section */}
+      <View style={styles.row}>
+        <Text style={[styles.label, { fontSize: 16, fontWeight: "bold", color: "#2d5a3d" }]}>
+          Day 2 Rounds
+        </Text>
+      </View>
+      <View style={styles.row}>
+        <Text style={styles.label}>Round 1 Score:</Text>
+        <Text style={styles.value}>{score.day2Round1Score ?? "N/A"}</Text>
+      </View>
+      <View style={styles.row}>
+        <Text style={[styles.label, { fontWeight: "normal" }]}>Time 1:</Text>
+        <Text style={styles.value}>{score.day2Round1Time ?? "N/A"}</Text>
+      </View>
+      <View style={styles.row}>
+        <Text style={[styles.label, { fontWeight: "normal" }]}>Scored At:</Text>
+        <Text style={styles.value}>{formatDate(score.day2Round1ScoredAt)}</Text>
+      </View>
+
+      <View style={styles.row}>
+        <Text style={styles.label}>Round 2 Score:</Text>
+        <Text style={styles.value}>{score.day2Round2Score ?? "N/A"}</Text>
+      </View>
+      <View style={styles.row}>
+        <Text style={[styles.label, { fontWeight: "normal" }]}>Time 2:</Text>
+        <Text style={styles.value}>{score.day2Round2Time ?? "N/A"}</Text>
+      </View>
+      <View style={styles.row}>
+        <Text style={[styles.label, { fontWeight: "normal" }]}>Scored At:</Text>
+        <Text style={styles.value}>{formatDate(score.day2Round2ScoredAt)}</Text>
+      </View>
+
+      <View style={styles.row}>
+        <Text style={styles.label}>Round 3 Score:</Text>
+        <Text style={styles.value}>{score.day2Round3Score ?? "N/A"}</Text>
+      </View>
+      <View style={styles.row}>
+        <Text style={[styles.label, { fontWeight: "normal" }]}>Time 3:</Text>
+        <Text style={styles.value}>{score.day2Round3Time ?? "N/A"}</Text>
+      </View>
+      <View style={styles.row}>
+        <Text style={[styles.label, { fontWeight: "normal" }]}>Scored At:</Text>
+        <Text style={styles.value}>{formatDate(score.day2Round3ScoredAt)}</Text>
+      </View>
+
+      {/* Day 2 Best Score */}
+      <View style={styles.row}>
+        <Text style={[styles.label, { fontWeight: "bold", color: "#2d5a3d" }]}>Day 2 Best Score:</Text>
+        <Text style={[styles.value, { fontWeight: "bold", color: "#2d5a3d" }]}>
+          {score.breakdown?.day2BestScore ?? "N/A"}
+        </Text>
+      </View>
+
+      <View style={styles.divider} />
+
+      {/* Overall Best Score */}
+      <View style={styles.row}>
+        <Text style={[styles.label, { fontSize: 16, fontWeight: "bold", color: "#1976d2" }]}>
+          Overall Best Score:
+        </Text>
+        <Text style={[styles.value, { fontSize: 16, fontWeight: "bold", color: "#1976d2" }]}>
+          {score.bestScore ?? "N/A"}
+        </Text>
       </View>
     </>
   );
@@ -152,7 +246,7 @@ export default function ScoreCard({
   return (
     <View style={styles.card}>
       {/* Conditional rendering based on category */}
-      {category.startsWith("robo") && renderRoboCategoryScores()}
+      {(category === "robo-elem" || category === "robo-junior" || category === "robo-senior") && renderRoboCategoryScores()}
       {category.startsWith("fi-") && renderFICategoryScores()}
       {category === "future-eng" && renderFutureEngCategoryScores()}
       {category === "robosports" && (
@@ -254,7 +348,7 @@ export default function ScoreCard({
                     <Text style={{ color: "#fff", fontWeight: "bold" }}>
                       Delete
                     </Text>
-                  </TouchableOpacity>
+                    </TouchableOpacity>
                 </View>
               </View>
             </View>

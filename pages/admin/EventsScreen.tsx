@@ -588,7 +588,7 @@ const EventsScreen = () => {
                       </Text>
                     </View>
 
-                    <TouchableOpacity
+                    {/* <TouchableOpacity
                       onPress={() =>
                         setSelectedTeams(
                           selectedTeams.filter((id) => id !== teamId)
@@ -607,7 +607,7 @@ const EventsScreen = () => {
                       <Text style={{ color: "red", textAlign: "center" }}>
                         Remove
                       </Text>
-                    </TouchableOpacity>
+                    </TouchableOpacity> */}
                   </View>
                 );
               })

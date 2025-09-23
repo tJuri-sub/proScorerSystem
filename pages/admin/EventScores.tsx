@@ -101,8 +101,74 @@ const getCategoryFields = (category: string) => {
           bestScore: Math.max(data.round1Score || 0, data.round2Score || 0)
         })
       };
+
+    case 'robo-elem':
+    case 'robo-junior':  
+    case 'robo-senior':
+      return {
+        fields: ['day1Round1Score', 'day1Round2Score', 'day1Round3Score', 'day2Round1Score', 'day2Round2Score', 'day2Round3Score'],
+        headers: ['D1R1', 'D1R2', 'D1R3', 'D2R1', 'D2R2', 'D2R3', 'D1 Best', 'D2 Best', 'Total'],
+        calculator: (data: any) => {
+          // Day 1 scores
+          const day1Scores = [
+            { score: data.day1Round1Score, time: data.day1Round1Time },
+            { score: data.day1Round2Score, time: data.day1Round2Time },
+            { score: data.day1Round3Score, time: data.day1Round3Time }
+          ].filter(r => r.score != null);
+
+          // Day 2 scores
+          const day2Scores = [
+            { score: data.day2Round1Score, time: data.day2Round1Time },
+            { score: data.day2Round2Score, time: data.day2Round2Time },
+            { score: data.day2Round3Score, time: data.day2Round3Time }
+          ].filter(r => r.score != null);
+
+          // Find best run from day 1 (highest score, then lowest time)
+          let day1Best = null;
+          if (day1Scores.length > 0) {
+            day1Best = day1Scores.reduce((best, current) => {
+              if (current.score > best.score) return current;
+              if (current.score === best.score && parseTimeToSeconds(current.time) < parseTimeToSeconds(best.time)) return current;
+              return best;
+            });
+          }
+
+          // Find best run from day 2 (highest score, then lowest time)
+          let day2Best = null;
+          if (day2Scores.length > 0) {
+            day2Best = day2Scores.reduce((best, current) => {
+              if (current.score > best.score) return current;
+              if (current.score === best.score && parseTimeToSeconds(current.time) < parseTimeToSeconds(best.time)) return current;
+              return best;
+            });
+          }
+
+          // Calculate total score (sum of best from each day)
+          const day1BestScore = day1Best ? day1Best.score : 0;
+          const day2BestScore = day2Best ? day2Best.score : 0;
+          const totalScore = day1BestScore + day2BestScore;
+          
+          // For tie-breaking, use combined time (sum of best times from both days)
+          const day1BestTime = day1Best ? parseTimeToSeconds(day1Best.time) : 0;
+          const day2BestTime = day2Best ? parseTimeToSeconds(day2Best.time) : 0;
+          const combinedTime = day1BestTime + day2BestTime;
+          
+          return {
+            ...data,
+            bestScore: totalScore,
+            combinedTime,
+            breakdown: {
+              day1BestScore,
+              day2BestScore,
+              day1BestTime: day1Best ? day1Best.time : "",
+              day2BestTime: day2Best ? day2Best.time : "",
+              totalScore
+            }
+          };
+        }
+      };
       
-    default: // robomissions (robo-elem, robo-junior, robo-senior)
+    default: // fallback to legacy data
       return {
         fields: ['round1Score', 'round2Score'],
         headers: ['Round 1', 'Round 2'],
@@ -116,11 +182,21 @@ const getCategoryFields = (category: string) => {
 
 const parseTimeToSeconds = (timeStr: string): number => {
   if (!timeStr) return 0;
+  
+  // Handle mm:ss.ms format (new format)
+  if (timeStr.includes('.')) {
+    const [timepart, ms] = timeStr.split('.');
+    const [mm, ss] = timepart.split(':').map(Number);
+    return (mm || 0) * 60 + (ss || 0) + (parseInt(ms) || 0) / 100;
+  }
+  
+  // Handle mm:ss:ms format (legacy format)  
   const parts = timeStr.split(':');
   if (parts.length === 3) {
     const [mm, ss, ms] = parts.map(Number);
     return (mm || 0) * 60 + (ss || 0) + (ms || 0) / 100;
   }
+  
   return 0;
 };
 
@@ -214,6 +290,14 @@ export default function EventScores({ navigation }: any) {
         .map((team: any) => categoryConfig.calculator(team))
         .filter((team: any) => team.bestScore !== undefined && team.bestScore > 0)
         .sort((a: any, b: any) => {
+          if ((category === 'robo-elem' || category === 'robo-junior' || category === 'robo-senior') && 
+              a.combinedTime !== undefined && b.combinedTime !== undefined) {
+            if (b.bestScore !== a.bestScore) {
+              return b.bestScore - a.bestScore;
+            }
+            // If scores are equal, sort by combined time (less is better)
+            return (a.combinedTime || Infinity) - (b.combinedTime || Infinity);
+          }
           // For future-eng, also consider time in sorting
           if (category === 'future-eng') {
             if (b.bestScore !== a.bestScore) {
@@ -258,6 +342,23 @@ export default function EventScores({ navigation }: any) {
         "Robotic Solution": team.roboticSolution ?? "-",
         "Presentation & Team Spirit": team.presentationSpirit ?? "-",
         "Total Score": team.bestScore,
+      }));
+    } else if (category === 'robo-elem' || category === 'robo-junior' || category === 'robo-senior') {
+        data = leaderboard.map((team, index) => ({
+        Rank: index + 1,
+        Team: team.teamName,
+        "Day 1 Round 1": team.day1Round1Score ?? "-",
+        "Day 1 Round 2": team.day1Round2Score ?? "-",
+        "Day 1 Round 3": team.day1Round3Score ?? "-",
+        "Day 1 Best": team.breakdown?.day1BestScore ?? "-",
+        "Day 1 Best Time": team.breakdown?.day1BestTime ?? "-",
+        "Day 2 Round 1": team.day2Round1Score ?? "-",
+        "Day 2 Round 2": team.day2Round2Score ?? "-",
+        "Day 2 Round 3": team.day2Round3Score ?? "-",
+        "Day 2 Best": team.breakdown?.day2BestScore ?? "-",
+        "Day 2 Best Time": team.breakdown?.day2BestTime ?? "-",
+        "Total Score": team.bestScore,
+        "Combined Time": team.combinedTime ? `${team.combinedTime}s` : "-",
       }));
     } else {
       // Default robomissions format
@@ -370,6 +471,46 @@ export default function EventScores({ navigation }: any) {
           </Text>
         </View>
       );
+      } else if (category === 'robo-elem' || category === 'robo-junior' || category === 'robo-senior') {
+      return (
+        <View style={stickyStyles.row}>
+          <Text style={stickyStyles.cell}>
+            {rankDisplay} {item.teamName}
+          </Text>
+          {/* Day 1 Rounds */}
+          <Text style={[stickyStyles.cell, { textAlign: "center", fontSize: 10 }]}>
+            {item.day1Round1Score ?? "N/A"}
+          </Text>
+          <Text style={[stickyStyles.cell, { textAlign: "center", fontSize: 10 }]}>
+            {item.day1Round2Score ?? "N/A"}
+          </Text>
+          <Text style={[stickyStyles.cell, { textAlign: "center", fontSize: 10 }]}>
+            {item.day1Round3Score ?? "N/A"}
+          </Text>
+          {/* Day 2 Rounds */}
+          <Text style={[stickyStyles.cell, { textAlign: "center", fontSize: 10 }]}>
+            {item.day2Round1Score ?? "N/A"}
+          </Text>
+          <Text style={[stickyStyles.cell, { textAlign: "center", fontSize: 10 }]}>
+            {item.day2Round2Score ?? "N/A"}
+          </Text>
+          <Text style={[stickyStyles.cell, { textAlign: "center", fontSize: 10 }]}>
+            {item.day2Round3Score ?? "N/A"}
+          </Text>
+          {/* Day 1 Best */}
+          <Text style={[stickyStyles.cell, { textAlign: "center", fontSize: 12, fontWeight: "bold", color: "#2d5a3d" }]}>
+            {item.breakdown?.day1BestScore ?? "N/A"}
+          </Text>
+          {/* Day 2 Best */}
+          <Text style={[stickyStyles.cell, { textAlign: "center", fontSize: 12, fontWeight: "bold", color: "#2d5a3d" }]}>
+            {item.breakdown?.day2BestScore ?? "N/A"}
+          </Text>
+          {/* Total */}
+          <Text style={[stickyStyles.cell, { textAlign: "center", fontSize: 16, fontWeight: "bold", color: "#1976d2" }]}>
+            {item.bestScore}
+          </Text>
+        </View>
+      );
     } else {
       // Default robomissions format
       return (
@@ -382,6 +523,9 @@ export default function EventScores({ navigation }: any) {
           </Text>
           <Text style={[stickyStyles.cell, { textAlign: "center", fontSize: 18 }]}>
             {item.round2Score ?? "N/A"}
+          </Text>
+          <Text style={[stickyStyles.cell, { textAlign: "center", fontSize: 16, fontWeight: "bold" }]}>
+            {item.bestScore}
           </Text>
         </View>
       );

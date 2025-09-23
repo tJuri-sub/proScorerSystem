@@ -35,10 +35,19 @@ function isScoringComplete(teamData: any, category: string): boolean {
 
   const categoryLower = category.toLowerCase();
 
-  // Robo categories (elem, jr, sr)
+  // Robo categories (elem, jr, sr) - NEW: Check both days
   if (categoryLower.includes('robo-elem') || categoryLower.includes('robo-junior') || categoryLower.includes('robo-senior')) {
-    // Both round1Score and round2Score must be present and not null/undefined
-    return teamData.round1Score != null && teamData.round2Score != null;
+    // Day 1 must be complete (all 3 rounds)
+    const day1Complete = teamData.day1Round1Score != null && 
+                        teamData.day1Round2Score != null && 
+                        teamData.day1Round3Score != null;
+    
+    // Day 2 must be complete (all 3 rounds)
+    const day2Complete = teamData.day2Round1Score != null && 
+                        teamData.day2Round2Score != null && 
+                        teamData.day2Round3Score != null;
+    
+    return day1Complete && day2Complete;
   }
 
   // Robosports - placeholder for future alterations
@@ -73,10 +82,25 @@ function getTeamCompletionData(teamData: any, category: string) {
   const categoryLower = category.toLowerCase();
 
   if (categoryLower.includes('robo-elem') || categoryLower.includes('robo-junior') || categoryLower.includes('robo-senior')) {
+    // NEW: Day 1 and Day 2 completion tracking
+    const day1Complete = teamData.day1Round1Score != null && 
+                         teamData.day1Round2Score != null && 
+                         teamData.day1Round3Score != null;
+    
+    const day2Complete = teamData.day2Round1Score != null && 
+                         teamData.day2Round2Score != null && 
+                         teamData.day2Round3Score != null;
+
     return {
-      hasRound1: teamData.round1Score != null,
-      hasRound2: teamData.round2Score != null,
-      isComplete: teamData.round1Score != null && teamData.round2Score != null
+      hasDay1Round1: teamData.day1Round1Score != null,
+      hasDay1Round2: teamData.day1Round2Score != null,
+      hasDay1Round3: teamData.day1Round3Score != null,
+      hasDay2Round1: teamData.day2Round1Score != null,
+      hasDay2Round2: teamData.day2Round2Score != null,
+      hasDay2Round3: teamData.day2Round3Score != null,
+      day1Complete,
+      day2Complete,
+      isComplete: day1Complete && day2Complete
     };
   }
 
@@ -280,7 +304,60 @@ export default function Leaderboard({ navigation }: any) {
       Object.values(teamMap).forEach((team) => {
         const categoryLower = judgeCategory.toLowerCase();
         
-        if (categoryLower.includes('robo') || categoryLower.includes('robosports')) {
+        if (categoryLower.includes('robo-elem') || categoryLower.includes('robo-junior') || categoryLower.includes('robo-senior')) {
+          // NEW: Handle day 1 and day 2 scoring
+          const day1Scores = [
+            { score: team.day1Round1Score, time: team.day1Round1Time },
+            { score: team.day1Round2Score, time: team.day1Round2Time },
+            { score: team.day1Round3Score, time: team.day1Round3Time }
+          ].filter(r => r.score != null);
+
+          const day2Scores = [
+            { score: team.day2Round1Score, time: team.day2Round1Time },
+            { score: team.day2Round2Score, time: team.day2Round2Time },
+            { score: team.day2Round3Score, time: team.day2Round3Time }
+          ].filter(r => r.score != null);
+
+          // Find best run from day 1 (highest score, then lowest time)
+          let day1Best = null;
+          if (day1Scores.length > 0) {
+            day1Best = day1Scores.reduce((best, current) => {
+              if (current.score > best.score) return current;
+              if (current.score === best.score && parseTimeString(current.time) < parseTimeString(best.time)) return current;
+              return best;
+            });
+          }
+
+          // Find best run from day 2 (highest score, then lowest time)
+          let day2Best = null;
+          if (day2Scores.length > 0) {
+            day2Best = day2Scores.reduce((best, current) => {
+              if (current.score > best.score) return current;
+              if (current.score === best.score && parseTimeString(current.time) < parseTimeString(best.time)) return current;
+              return best;
+            });
+          }
+
+          // Calculate total score (sum of best from each day)
+          const day1BestScore = day1Best ? day1Best.score : 0;
+          const day2BestScore = day2Best ? day2Best.score : 0;
+          team.bestScore = day1BestScore + day2BestScore;
+          
+          // For tie-breaking, use combined time (sum of best times from both days)
+          const day1BestTime = day1Best ? parseTimeString(day1Best.time) : 0;
+          const day2BestTime = day2Best ? parseTimeString(day2Best.time) : 0;
+          team.bestTimeMs = day1BestTime + day2BestTime;
+          
+          // Display format for best time
+          team.bestTime = `${day1BestScore}+${day2BestScore}=${team.bestScore}`;
+          
+          // Store individual day best scores for display
+          team.day1BestScore = day1BestScore;
+          team.day2BestScore = day2BestScore;
+          team.day1BestTime = day1Best ? day1Best.time : "";
+          team.day2BestTime = day2Best ? day2Best.time : "";
+          
+        } else if (categoryLower.includes('robosports')) {
           // Handle robo categories with rounds and times
           const r1 = team.round1Score ?? null;
           const r2 = team.round2Score ?? null;
@@ -521,7 +598,24 @@ export default function Leaderboard({ navigation }: any) {
                   {item.bestScore} pts
                 </Text>
 
-                {item.bestTime && 
+                {/* For robo categories, show the breakdown instead of time */}
+                {judgeCategory && 
+                 (judgeCategory.toLowerCase().includes('robo-elem') || 
+                  judgeCategory.toLowerCase().includes('robo-junior') || 
+                  judgeCategory.toLowerCase().includes('robo-senior')) ? (
+                  <Text
+                    style={{
+                      color: textColor,
+                      fontFamily: "Inter_400Regular",
+                      marginLeft: 5,
+                      marginVertical: "auto",
+                      fontSize: 12,
+                    }}
+                  >
+                    {item.day1BestScore}+{item.day2BestScore}
+                  </Text>
+                ) : (
+                  item.bestTime && 
                   judgeCategory && 
                   !judgeCategory.toLowerCase().includes('future') && 
                   !judgeCategory.toLowerCase().includes('fi-') && (
@@ -535,7 +629,8 @@ export default function Leaderboard({ navigation }: any) {
                     >
                       {item.bestTime}
                     </Text>
-                  )}
+                  )
+                )}
               </View>
             );
           }}
