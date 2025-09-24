@@ -14,10 +14,7 @@ export default StyleSheet.create({
   },
 
   header: {
-    marginHorizontal: 3,
-    marginTop: 10,
     marginBottom: 10,
-    gap: 10,
   },
 
   headerTitle: {
@@ -203,10 +200,10 @@ export default StyleSheet.create({
 
   // Robosports
   createGameButton: {
-    backgroundColor: '#432344',
+    backgroundColor: "#432344",
     padding: 15,
     borderRadius: 8,
-    alignItems: 'center',
+    alignItems: "center",
     marginVertical: 10,
   },
 });

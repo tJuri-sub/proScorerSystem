@@ -56,66 +56,89 @@ export default StyleSheet.create({
 
   // TEAM CARD
   teamCard: {
-    backgroundColor: "#fff",
-    borderRadius: 16,
-    padding: 18,
-    marginBottom: 18,
-    boxShadow: "0px 2px 3px rgba(0,0,0,0.3)",
-    flexDirection: "column",
+    backgroundColor: "#f9fafb",
+    borderRadius: 20,
+    marginVertical: 12,
     width: "95%",
-    margin: "auto",
+    alignSelf: "center",
+    padding: 18,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.15,
+    shadowRadius: 6,
+    elevation: 4,
   },
 
-  teamCardHeader: {
+  cardTopBar: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginBottom: 12,
+    borderBottomWidth: 0.5,
+    borderBottomColor: "#d1d5db",
+    paddingBottom: 6,
+  },
+
+  topBarText: {
+    fontSize: 13,
+    color: "#6b7280",
+    fontWeight: "600",
+    letterSpacing: 0.5,
+  },
+
+  teamInfoRow: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "flex-start",
-    marginBottom: 8,
-    borderBottomWidth: 1,
-    paddingBottom: 10,
+    marginBottom: 12,
   },
 
-  teamCardHeaderText: {
-    fontSize: 15,
-    color: "#888",
-    fontStyle: "italic",
-    fontWeight: "500",
-  },
-
-  teamCardRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 6,
-  },
-
-  teamCardCountry: {
-    fontSize: 16,
-    color: "#222",
-    fontWeight: "500",
-    marginRight: 8,
-    textAlign: "right",
-  },
-
-  teamCardTeamName: {
-    fontSize: 20,
-    fontWeight: "bold",
-    color: "#432344",
-    flex: 1,
-    textAlign: "left",
+  teamName: {
+    fontSize: 22,
+    fontWeight: "700",
+    color: "#4c1d95", // deep purple accent
+    flexShrink: 1,
     flexWrap: "wrap",
   },
 
-  teamCardMember: {
-    fontSize: 14,
-    color: "#333",
-    marginLeft: 20,
+  country: {
+    fontSize: 16,
+    color: "#374151",
+    fontWeight: "500",
+    marginLeft: 12,
   },
 
-  teamCardCoach: {
+  membersBlock: {
+    marginBottom: 10,
+    marginLeft: 4,
+  },
+
+  member: {
+    fontSize: 15,
+    color: "#1f2937",
+    marginBottom: 4,
+  },
+
+  coachRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 8,
+  },
+
+  coachLabel: {
     fontSize: 14,
-    color: "#432344",
-    fontStyle: "italic",
-    marginTop: 2,
-    marginLeft: 2,
+    color: "#6b7280",
+    marginRight: 6,
+  },
+
+  coachName: {
+    fontSize: 15,
+    fontWeight: "600",
+    color: "#4c1d95",
+  },
+
+  footerNote: {
+    fontSize: 11,
+    color: "#9ca3af",
+    textAlign: "right",
   },
 });

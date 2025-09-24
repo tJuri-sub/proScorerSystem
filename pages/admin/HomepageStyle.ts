@@ -30,7 +30,7 @@ export default StyleSheet.create({
   },
 
   dropdownText: {
-    fontSize: 14,
+    fontSize: 16,
     color: "#432344",
     textAlign: "center",
   },
