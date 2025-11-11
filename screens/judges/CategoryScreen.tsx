@@ -10,7 +10,7 @@ import {
   ScrollView,
 } from "react-native";
 import { getFirestore, collection, getDocs } from "firebase/firestore";
-import styles from "../components/styles/judgeStyles/CategoryStyling";
+import styles from "../../components/styles/judgeStyles/CategoryStyling";
 import { AntDesign, Feather } from "@expo/vector-icons";
 import DropDownPicker from "react-native-dropdown-picker";
 

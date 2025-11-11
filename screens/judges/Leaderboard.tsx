@@ -16,9 +16,9 @@ import {
   query,
   where,
 } from "firebase/firestore";
-import { FIREBASE_AUTH, FIREBASE_DB } from "../firebaseconfig";
+import { FIREBASE_AUTH, FIREBASE_DB } from "../../firebaseconfig";
 import { useNavigation, NavigationProp } from "@react-navigation/native";
-import styles from "../components/styles/judgeStyles/LeaderboardStyling";
+import styles from "../../components/styles/judgeStyles/LeaderboardStyling";
 import DropDownPicker from "react-native-dropdown-picker";
 import { Feather } from "@expo/vector-icons";
 

@@ -13,7 +13,7 @@ import {
   Modal,
   Pressable,
 } from "react-native";
-import { FIREBASE_AUTH, FIREBASE_DB } from "../firebaseconfig";
+import { FIREBASE_AUTH, FIREBASE_DB } from "../../firebaseconfig";
 import {
   collection,
   getDocs,
@@ -27,18 +27,18 @@ import {
   updateDoc,
 } from "firebase/firestore";
 import { useFonts, Inter_400Regular } from "@expo-google-fonts/inter";
-import styles from "../components/styles/judgeStyles/ScorerStyling";
-import robostyles from "../components/styles/judgeStyles/RobosportsStyling";
+import styles from "../../components/styles/judgeStyles/ScorerStyling";
+import robostyles from "../../components/styles/judgeStyles/RobosportsStyling";
 import { Feather } from "@expo/vector-icons";
 import DropDownPicker from "react-native-dropdown-picker";
-import RoboSportsMatchScorer from "../components/component/judgeDrawer/robosports/RoboSportsScorer";
+import RoboSportsMatchScorer from "../../components/component/judgeDrawer/robosports/RoboSportsScorer";
 // Add these imports
 import {
   Tournament,
   TournamentBracket,
-} from "../components/component/judgeDrawer/robosports/TournamentTypes";
-import { TournamentManager } from "../components/component/judgeDrawer/robosports/TournamentManager";
-import TournamentSetup from "../components/component/judgeDrawer/robosports/TournamentSetup";
+} from "../../components/component/judgeDrawer/robosports/TournamentTypes";
+import { TournamentManager } from "../../components/component/judgeDrawer/robosports/TournamentManager";
+import TournamentSetup from "../../components/component/judgeDrawer/robosports/TournamentSetup";
 
 interface GameData {
   id: string;

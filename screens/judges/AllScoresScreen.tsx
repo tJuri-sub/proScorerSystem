@@ -1,6 +1,6 @@
 import React from "react";
 import { View, Text, FlatList } from "react-native";
-import styles from "../components/styles/judgeStyles/AllScoreScreen";
+import styles from "../../components/styles/judgeStyles/AllScoreScreen";
 
 // Helper to parse "mm:ss:ms" to milliseconds
 function parseTimeString(timeStr: string) {

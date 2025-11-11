@@ -10,13 +10,13 @@ import {
   ScrollView,
 } from "react-native";
 import { SafeAreaView, SafeAreaProvider } from "react-native-safe-area-context";
-import { FIREBASE_AUTH, FIREBASE_DB } from "../firebaseconfig";
+import { FIREBASE_AUTH, FIREBASE_DB } from "../../firebaseconfig";
 import { onAuthStateChanged } from "firebase/auth";
 import { doc, getDoc } from "firebase/firestore";
-import styles from "../components/styles/judgeStyles/HomepageStyle";
+import styles from "../../components/styles/judgeStyles/HomepageStyle";
 import { Feather, Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { useFonts, Inter_400Regular } from "@expo-google-fonts/inter";
-import { useLogoutModal } from "../components/component/LogoutModalContent";
+import { useLogoutModal } from "../../components/component/LogoutModalContent";
 
 /* ===========================
    🔹 Constants & Helpers
@@ -25,7 +25,7 @@ const CATEGORY_DATA = [
   {
     label: "Robomission",
     value: "robomission",
-    image: require("../assets/images/RoboMissionLogo.png"),
+    image: require("../../assets/images/RoboMissionLogo.png"),
     desc: "Build and program a robot that solves tasks on playing field",
     subcategories: [
       { label: "Elementary", value: "robo-elem" },
@@ -36,13 +36,13 @@ const CATEGORY_DATA = [
   {
     label: "Robosports",
     value: "robosports",
-    image: require("../assets/images/RoboSportsLogo.png"),
+    image: require("../../assets/images/RoboSportsLogo.png"),
     desc: "Teams compete with 2 robots in an exciting game",
   },
   {
     label: "Future Innovators",
     value: "future-innovators",
-    image: require("../assets/images/FutureILogo.png"),
+    image: require("../../assets/images/FutureILogo.png"),
     desc: "Work on project and design and build a robot",
     subcategories: [
       { label: "Elementary", value: "fi-elem" },
@@ -53,7 +53,7 @@ const CATEGORY_DATA = [
   {
     label: "Future Engineers",
     value: "future-eng",
-    image: require("../assets/images/FutureELogo.png"),
+    image: require("../../assets/images/FutureELogo.png"),
     desc: "Advanced robotics following current research trends",
   },
 ];

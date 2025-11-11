@@ -1,8 +1,8 @@
 import React from "react";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
-import HomeScreen from "../../../pages/HomeScreen";
-import Leaderboard from "../../../pages/Leaderboard";
-import ScorerScreen from "../../../pages/ScorerScreen";
+import HomeScreen from "../../../screens/judges/HomeScreen";
+import Leaderboard from "../../../screens/judges/Leaderboard";
+import ScorerScreen from "../../../screens/judges/ScorerScreen";
 
 import Entypo from "@expo/vector-icons/Entypo";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";

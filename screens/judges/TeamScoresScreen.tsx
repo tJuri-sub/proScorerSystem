@@ -15,8 +15,8 @@ import {
   query,
   where,
 } from "firebase/firestore";
-import styles from "../components/styles/judgeStyles/CategoryStyling";
-import ScoreCard from "../components/component/ScoreCard"; // Adjust path if needed
+import styles from "../../components/styles/judgeStyles/CategoryStyling";
+import ScoreCard from "../../components/component/ScoreCard"; // Adjust path if needed
 
 export default function TeamScoresScreen({ route, navigation }: any) {
   const { team, category, selectedEvents = [] } = route.params; // category is already available
@@ -39,9 +39,12 @@ export default function TeamScoresScreen({ route, navigation }: any) {
 
         // Fetch scores from each event
         let allScores: any[] = [];
-        
-        const eventsToQuery = selectedEvents.length > 0 ? selectedEvents : eventsList.map((e: any) => e.id);
-        
+
+        const eventsToQuery =
+          selectedEvents.length > 0
+            ? selectedEvents
+            : eventsList.map((e: any) => e.id);
+
         for (const eventId of eventsToQuery) {
           try {
             const scoresRef = collection(db, `events/${eventId}/scores`);
@@ -50,20 +53,23 @@ export default function TeamScoresScreen({ route, navigation }: any) {
               where("teamId", "==", team.id),
               where("category", "==", category)
             );
-            
+
             const querySnapshot = await getDocs(q);
             const eventScores = querySnapshot.docs.map((doc) => ({
               id: doc.id,
               eventId: eventId, // Add eventId to each score
               ...doc.data(),
             }));
-            
+
             allScores = [...allScores, ...eventScores];
           } catch (error) {
-            console.error(`Error fetching scores from event ${eventId}:`, error);
+            console.error(
+              `Error fetching scores from event ${eventId}:`,
+              error
+            );
           }
         }
-        
+
         setScores(allScores);
       } catch (error) {
         console.error("Error fetching scores:", error);
@@ -78,7 +84,7 @@ export default function TeamScoresScreen({ route, navigation }: any) {
 
   // Helper function to get event name
   const getEventName = (eventId: string) => {
-    const event = events.find(e => e.id === eventId);
+    const event = events.find((e) => e.id === eventId);
     return event?.name || event?.title || eventId;
   };
 
@@ -96,39 +102,52 @@ export default function TeamScoresScreen({ route, navigation }: any) {
         <Text style={styles.title}>Scores for {team.teamName}</Text>
         {selectedEvents.length > 0 && (
           <View style={{ marginTop: 8 }}>
-            <Text style={{ fontSize: 14, color: '#666', textAlign: 'center' }}>
-              Filtered by events: {selectedEvents.map((eventId: string) => getEventName(eventId)).join(', ')}
+            <Text style={{ fontSize: 14, color: "#666", textAlign: "center" }}>
+              Filtered by events:{" "}
+              {selectedEvents
+                .map((eventId: string) => getEventName(eventId))
+                .join(", ")}
             </Text>
           </View>
         )}
       </View>
-      
+
       <FlatList
         data={scores}
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => (
           <View style={{ marginBottom: 10 }}>
-            <ScoreCard score={item} category={category} /> {/* Pass the category prop here */}
+            <ScoreCard score={item} category={category} />{" "}
+            {/* Pass the category prop here */}
             {item.eventId && (
-              <Text style={{ 
-                fontSize: 12, 
-                color: '#888', 
-                marginTop: 4,
-                textAlign: 'center',
-                fontStyle: 'italic'
-              }}>
+              <Text
+                style={{
+                  fontSize: 12,
+                  color: "#888",
+                  marginTop: 4,
+                  textAlign: "center",
+                  fontStyle: "italic",
+                }}
+              >
                 Event: {getEventName(item.eventId)}
               </Text>
             )}
           </View>
         )}
         ListEmptyComponent={
-          <View style={{ alignItems: 'center', marginTop: 50 }}>
-            <Text style={{ fontSize: 16, color: '#666' }}>
+          <View style={{ alignItems: "center", marginTop: 50 }}>
+            <Text style={{ fontSize: 16, color: "#666" }}>
               No scores found for this team.
             </Text>
             {selectedEvents.length > 0 && (
-              <Text style={{ fontSize: 14, color: '#888', marginTop: 8, textAlign: 'center' }}>
+              <Text
+                style={{
+                  fontSize: 14,
+                  color: "#888",
+                  marginTop: 8,
+                  textAlign: "center",
+                }}
+              >
                 Try removing event filters to see all scores.
               </Text>
             )}

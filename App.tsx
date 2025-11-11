@@ -12,42 +12,42 @@ import {
 } from "react-native";
 
 //Global
-import VerifyEmailScreen from "./pages/accountManage/VerifyEmailScreen";
+import VerifyEmailScreen from "./screens/accountManage/VerifyEmailScreen";
 
 //Judges
-import Leaderboard from "./pages/Leaderboard";
-import HomeScreen from "./pages/HomeScreen";
-import LoginJudge from "./pages/LoginScreenJudge";
-import CategoryScreenJudge from "./pages/CategoryScreen";
-import ScorerScreen from "./pages/ScorerScreen";
-import AllScoresScreen from "./pages/AllScoresScreen";
-import TeamScoresScreen from "./pages/TeamScoresScreen";
-import AllLeaderboardScreen from "./pages/AllLeaderboardScreen";
+import Leaderboard from "./screens/judges/Leaderboard";
+import HomeScreen from "./screens/judges/HomeScreen";
+import LoginJudge from "./screens/LoginScreenJudge";
+import CategoryScreenJudge from "./screens/judges/CategoryScreen";
+import ScorerScreen from "./screens/judges/ScorerScreen";
+import AllScoresScreen from "./screens/judges/AllScoresScreen";
+import TeamScoresScreen from "./screens/judges/TeamScoresScreen";
+import AllLeaderboardScreen from "./screens/judges/AllLeaderboardScreen";
 
 //Admin
-import HomeScreenAdmin from "./pages/admin/HomeScreen";
-import Login from "./pages/LoginScreenAdmin";
-import SignUp from "./pages/SignUpScreenAdmin";
-import CategoryScreen from "./pages/admin/CategoryScreen";
-import TeamScores from "./pages/admin/TeamScores";
-import EventsScreen from "./pages/admin/EventsScreen";
-import EventCategories from "./pages/admin/EventCategories";
-import EventLeaderboard from "./pages/admin/EventLeaderboard";
-import EventScores from "./pages/admin/EventScores";
+import HomeScreenAdmin from "./screens/admin/HomeScreen";
+import Login from "./screens/LoginScreenAdmin";
+import SignUp from "./screens/SignUpScreenAdmin";
+import CategoryScreen from "./screens/admin/CategoryScreen";
+import TeamScores from "./screens/admin/TeamScores";
+import EventsScreen from "./screens/admin/EventsScreen";
+import EventCategories from "./screens/admin/EventCategories";
+import EventLeaderboard from "./screens/admin/EventLeaderboard";
+import EventScores from "./screens/admin/EventScores";
 
 import { useEffect, useState } from "react";
 import { onAuthStateChanged, User } from "firebase/auth";
 import { FIREBASE_AUTH } from "./firebaseconfig";
 import { doc, getDoc } from "firebase/firestore";
 import { FIREBASE_DB } from "./firebaseconfig";
-import AllJudgesScreen from "./pages/admin/AllJudgesScreen";
+import AllJudgesScreen from "./screens/admin/AllJudgesScreen";
 import { AntDesign, FontAwesome6 } from "@expo/vector-icons";
 import JudgeDrawerNavigator from "./components/component/judgeDrawer/JudgeDrawerNavigator";
 import { LogoutModalProvider } from "./components/component/LogoutModalContent";
 import DrawerNavigator from "./components/component/adminDrawer/DrawerNavigator";
-import ProfileAdmin from "./pages/admin/Profile";
-import OverallScoresScreen from "./pages/admin/OverallScores";
-import AllLeaderboard from "./pages/admin/Leaderboard";
+import ProfileAdmin from "./screens/admin/Profile";
+import OverallScoresScreen from "./screens/admin/OverallScores";
+import AllLeaderboard from "./screens/admin/Leaderboard";
 
 const Stack = createNativeStackNavigator();
 const InsideStack = createNativeStackNavigator();
@@ -139,14 +139,12 @@ const AdminInsideStackNavigator = () => (
     <InsideStack.Screen name="AllLeaderboard" component={AllLeaderboard} />
     <InsideStack.Screen name="Category" component={CategoryScreen} />
     <InsideStack.Screen name="Judges" component={AllJudgesScreen} />
-    <InsideStack.Screen name="TeamScores" component={TeamScores} />
+    <InsideStack.Screen name="TeamScores" component={TeamScoresScreen} />
     <InsideStack.Screen name="OverallScores" component={OverallScoresScreen} />
     <InsideStack.Screen name="EventCategory" component={EventCategories} />
     <InsideStack.Screen name="Event" component={EventsScreen} />
     <InsideStack.Screen name="EventLeaderboard" component={EventLeaderboard} />
     <InsideStack.Screen name="EventScores" component={EventScores} />
-
-    
   </InsideStack.Navigator>
 );
 
