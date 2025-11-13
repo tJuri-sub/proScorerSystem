@@ -9,24 +9,32 @@ import {
   Alert,
 } from "react-native";
 import { useNavigation, NavigationProp } from "@react-navigation/native";
+import FontAwesome5 from "@expo/vector-icons/FontAwesome5";
+import styles from "../components/styles/AuthformStyle";
+
+//Utils
+import bcrypt from "bcryptjs";
+
+//Firbase Configurations
 import {
   createUserWithEmailAndPassword,
   fetchSignInMethodsForEmail,
   sendEmailVerification,
 } from "firebase/auth";
 import { doc, getDoc, setDoc, updateDoc } from "firebase/firestore";
-import bcrypt from "bcryptjs"; //hashing passwords
-
 import { FIREBASE_APP, FIREBASE_AUTH, FIREBASE_DB } from "../firebaseconfig";
-import styles from "../components/styles/AuthformStyle";
-import FontAwesome5 from "@expo/vector-icons/FontAwesome5";
+
+//Components
 import Login from "./LoginScreenAdmin";
 import VerifyEmailScreen from "./accountManage/VerifyEmailScreen";
 
 const SignUp = () => {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [confirmpassword, setConfirmPassword] = useState("");
+  const [userData, setUserData] = useState({
+    email: "",
+    password: "",
+    confirmPassword: "",
+  });
+
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
@@ -35,16 +43,21 @@ const SignUp = () => {
   type RootStackParamList = {
     LoginAdmin: undefined;
     VerifyEmail: undefined;
-    // Add other routes here if needed
   };
 
   const navigation = useNavigation<NavigationProp<RootStackParamList>>();
+
+  const handleUserInput = (name: string, value: string) => {
+    setUserData((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+  };
 
   const signIn = () => {
     navigation.navigate("LoginAdmin");
   };
 
-  // Email Validation Functions
   const validateEmail = (email: string) => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     return emailRegex.test(email);
@@ -53,7 +66,7 @@ const SignUp = () => {
   const checkEmailDuplication = async (email: string) => {
     try {
       const methods = await fetchSignInMethodsForEmail(FIREBASE_AUTH, email);
-      return methods.length > 0; // If methods exist, email is already in use
+      return methods.length > 0;
     } catch (error) {
       console.log("Error checking email duplication:", error);
       return false;
@@ -152,6 +165,7 @@ const SignUp = () => {
 
   // Sign Up Function
   const signUp = async () => {
+    const { email, password, confirmPassword } = userData;
     // Email validation
     if (!email.trim()) {
       alert("Email cannot be empty!");
@@ -179,11 +193,11 @@ const SignUp = () => {
       );
       return;
     }
-    if (password !== confirmpassword) {
+    if (password !== confirmPassword) {
       alert("Passwords do not match!");
       return;
     }
-    if (password !== confirmpassword) {
+    if (password !== confirmPassword) {
       alert("Passwords do not match!");
       return;
     }
@@ -244,11 +258,11 @@ const SignUp = () => {
               {/* Email */}
               <TextInput
                 style={styles.input}
-                value={email}
+                value={userData.email}
                 placeholder="Email"
                 placeholderTextColor={"#999999"}
                 autoCapitalize="none"
-                onChangeText={(text) => setEmail(text)}
+                onChangeText={(text) => handleUserInput("email", text)}
               />
               {/* Password */}
 
@@ -256,11 +270,11 @@ const SignUp = () => {
                 <TextInput
                   style={styles.input}
                   secureTextEntry={!showPassword}
-                  value={password}
+                  value={userData.password}
                   placeholder="Password"
                   placeholderTextColor={"#999999"}
                   autoCapitalize="none"
-                  onChangeText={(text) => setPassword(text)}
+                  onChangeText={(text) => handleUserInput("password", text)}
                 />
                 <TouchableOpacity
                   style={{
@@ -285,11 +299,13 @@ const SignUp = () => {
                 <TextInput
                   style={styles.input}
                   secureTextEntry={!showPassword}
-                  value={confirmpassword}
+                  value={userData.confirmPassword}
                   placeholder="Confirm Password"
                   placeholderTextColor={"#999999"}
                   autoCapitalize="none"
-                  onChangeText={(text) => setConfirmPassword(text)}
+                  onChangeText={(text) =>
+                    handleUserInput("confirmPassword", text)
+                  }
                 />
                 <TouchableOpacity
                   style={{
