@@ -116,66 +116,22 @@ const getCategoryFields = (category: string) => {
     case 'robo-junior':  
     case 'robo-senior':
       return {
-        fields: ['day1Round1Score', 'day1Round2Score', 'day1Round3Score', 'day2Round1Score', 'day2Round2Score', 'day2Round3Score'],
-        headers: ['D1R1', 'D1R2', 'D1R3', 'D2R1', 'D2R2', 'D2R3', 'D1 Best', 'D2 Best', 'Total'],
-        calculator: (data: any) => {
-          // Day 1 scores
-          const day1Scores = [
-            { score: data.day1Round1Score, time: data.day1Round1Time },
-            { score: data.day1Round2Score, time: data.day1Round2Time },
-            { score: data.day1Round3Score, time: data.day1Round3Time }
-          ].filter(r => r.score != null);
-
-          // Day 2 scores
-          const day2Scores = [
-            { score: data.day2Round1Score, time: data.day2Round1Time },
-            { score: data.day2Round2Score, time: data.day2Round2Time },
-            { score: data.day2Round3Score, time: data.day2Round3Time }
-          ].filter(r => r.score != null);
-
-          // Find best run from day 1 (highest score, then lowest time)
-          let day1Best = null;
-          if (day1Scores.length > 0) {
-            day1Best = day1Scores.reduce((best, current) => {
-              if (current.score > best.score) return current;
-              if (current.score === best.score && parseTimeToSeconds(current.time) < parseTimeToSeconds(best.time)) return current;
-              return best;
-            });
-          }
-
-          // Find best run from day 2 (highest score, then lowest time)
-          let day2Best = null;
-          if (day2Scores.length > 0) {
-            day2Best = day2Scores.reduce((best, current) => {
-              if (current.score > best.score) return current;
-              if (current.score === best.score && parseTimeToSeconds(current.time) < parseTimeToSeconds(best.time)) return current;
-              return best;
-            });
-          }
-
-          // Calculate total score (sum of best from each day)
-          const day1BestScore = day1Best ? day1Best.score : 0;
-          const day2BestScore = day2Best ? day2Best.score : 0;
-          const totalScore = day1BestScore + day2BestScore;
-          
-          // For tie-breaking, use combined time (sum of best times from both days)
-          const day1BestTime = day1Best ? parseTimeToSeconds(day1Best.time) : 0;
-          const day2BestTime = day2Best ? parseTimeToSeconds(day2Best.time) : 0;
-          const combinedTime = day1BestTime + day2BestTime;
-          
-          return {
+        fields: ['day1Round1Score', 'day1Round1Time', 'day1Round2Score', 'day1Round2Time'],
+        headers: ['Round 1 Score', 'Round 1 Time', 'Round 2 Score', 'Round 2 Time'],
+        calculator: (data: any) => ({
             ...data,
-            bestScore: totalScore,
-            combinedTime,
-            breakdown: {
-              day1BestScore,
-              day2BestScore,
-              day1BestTime: day1Best ? day1Best.time : "",
-              day2BestTime: day2Best ? day2Best.time : "",
-              totalScore
-            }
-          };
-        }
+
+            bestScore: Math.max(
+                data.day1Round1Score || 0,
+                data.day1Round2Score || 0
+            ),
+
+            bestTime:
+                parseTimeToSeconds(data.day1Round1Time) <
+                parseTimeToSeconds(data.day1Round2Time)
+                    ? data.day1Round1Time
+                    : data.day1Round2Time,
+        })
       };
       
     default: // fallback to legacy data
@@ -631,41 +587,93 @@ export default function AdminOverallScores({ navigation }: any) {
             return (
               <View style={stickyStyles.row}>
                 <Text style={stickyStyles.cell}>
-                  {rankDisplay} {item.teamName}
+                    {rankDisplay} {item.teamName}
                 </Text>
-                {/* Day 1 Rounds */}
-                <Text style={[stickyStyles.cell, { textAlign: "center", fontSize: 10 }]}>
-                  {item.day1Round1Score ?? "N/A"}
+
+                {/* Round 1 Score */}
+                <Text
+                    style={[
+                        stickyStyles.cell,
+                        {
+                            textAlign: "center",
+                            fontWeight:
+                                item.day1Round1Score >= item.day1Round2Score
+                                    ? "bold"
+                                    : "normal",
+                            color:
+                                item.day1Round1Score >= item.day1Round2Score
+                                    ? "#2d5a3d"
+                                    : "#000",
+                        },
+                    ]}
+                >
+                    {item.day1Round1Score ?? "N/A"}
                 </Text>
-                <Text style={[stickyStyles.cell, { textAlign: "center", fontSize: 10 }]}>
-                  {item.day1Round2Score ?? "N/A"}
+
+                {/* Round 1 Time */}
+                <Text
+                    style={[
+                        stickyStyles.cell,
+                        {
+                            textAlign: "center",
+                            fontWeight:
+                                parseTimeToSeconds(item.day1Round1Time) <
+                                parseTimeToSeconds(item.day1Round2Time)
+                                    ? "bold"
+                                    : "normal",
+                            color:
+                                parseTimeToSeconds(item.day1Round1Time) <
+                                parseTimeToSeconds(item.day1Round2Time)
+                                    ? "#1976d2"
+                                    : "#000",
+                        },
+                    ]}
+                >
+                    {item.day1Round1Time ?? "N/A"}
                 </Text>
-                <Text style={[stickyStyles.cell, { textAlign: "center", fontSize: 10 }]}>
-                  {item.day1Round3Score ?? "N/A"}
+
+                {/* Round 2 Score */}
+                <Text
+                    style={[
+                        stickyStyles.cell,
+                        {
+                            textAlign: "center",
+                            fontWeight:
+                                item.day1Round2Score > item.day1Round1Score
+                                    ? "bold"
+                                    : "normal",
+                            color:
+                                item.day1Round2Score > item.day1Round1Score
+                                    ? "#2d5a3d"
+                                    : "#000",
+                        },
+                    ]}
+                >
+                    {item.day1Round2Score ?? "N/A"}
                 </Text>
-                {/* Day 2 Rounds */}
-                <Text style={[stickyStyles.cell, { textAlign: "center", fontSize: 10 }]}>
-                  {item.day2Round1Score ?? "N/A"}
+
+                {/* Round 2 Time */}
+                <Text
+                    style={[
+                        stickyStyles.cell,
+                        {
+                            textAlign: "center",
+                            fontWeight:
+                                parseTimeToSeconds(item.day1Round2Time) <
+                                parseTimeToSeconds(item.day1Round1Time)
+                                    ? "bold"
+                                    : "normal",
+                            color:
+                                parseTimeToSeconds(item.day1Round2Time) <
+                                parseTimeToSeconds(item.day1Round1Time)
+                                    ? "#1976d2"
+                                    : "#000",
+                        },
+                    ]}
+                >
+                    {item.day1Round2Time ?? "N/A"}
                 </Text>
-                <Text style={[stickyStyles.cell, { textAlign: "center", fontSize: 10 }]}>
-                  {item.day2Round2Score ?? "N/A"}
-                </Text>
-                <Text style={[stickyStyles.cell, { textAlign: "center", fontSize: 10 }]}>
-                  {item.day2Round3Score ?? "N/A"}
-                </Text>
-                {/* Day 1 Best */}
-                <Text style={[stickyStyles.cell, { textAlign: "center", fontSize: 12, fontWeight: "bold", color: "#2d5a3d" }]}>
-                  {item.breakdown?.day1BestScore ?? "N/A"}
-                </Text>
-                {/* Day 2 Best */}
-                <Text style={[stickyStyles.cell, { textAlign: "center", fontSize: 12, fontWeight: "bold", color: "#2d5a3d" }]}>
-                  {item.breakdown?.day2BestScore ?? "N/A"}
-                </Text>
-                {/* Total */}
-                <Text style={[stickyStyles.cell, { textAlign: "center", fontSize: 16, fontWeight: "bold", color: "#1976d2" }]}>
-                  {item.bestScore}
-                </Text>
-              </View>
+            </View>
             );
     } else {
       // Default robomissions format

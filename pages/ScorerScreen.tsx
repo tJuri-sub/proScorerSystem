@@ -527,38 +527,20 @@ export default function ScorerScreen({ navigation }: any) {
 
   // Card status helpers
   const getCardStatus = (team: any) => {
-    // RoboMission: two rounds
+    // RoboMission: two rounds only
     if (
       judgeCategory === "robo-elem" ||
       judgeCategory === "robo-junior" ||
       judgeCategory === "robo-senior"
     ) {
-      if (selectedDay === 1) {
-        const hasR1 = team.day1Round1Score !== null && team.day1Round1Score !== undefined;
-        const hasR2 = team.day1Round2Score !== null && team.day1Round2Score !== undefined;
-        const hasR3 = team.day1Round3Score !== null && team.day1Round3Score !== undefined;
-        if (!hasR1 && !hasR2 && !hasR3) return "no-score";
-        if ((hasR1 && !hasR2 && !hasR3) || (!hasR1 && hasR2 && !hasR3) || (!hasR1 && !hasR2 && hasR3)) return "partial";
-        if ((hasR1 && hasR2 && !hasR3) || (hasR1 && !hasR2 && hasR3) || (!hasR1 && hasR2 && hasR3)) return "partial";
-        if (hasR1 && hasR2 && hasR3) return "complete";
-        return "no-score";
-      } else {
-        // Day 2 - check if Day 1 is complete first
-        const day1Complete = team.day1Round1Score !== null && team.day1Round1Score !== undefined &&
-                            team.day1Round2Score !== null && team.day1Round2Score !== undefined &&
-                            team.day1Round3Score !== null && team.day1Round3Score !== undefined;
-        
-        if (!day1Complete) return "day1-incomplete";
-        
-        const hasR1 = team.day2Round1Score !== null && team.day2Round1Score !== undefined;
-        const hasR2 = team.day2Round2Score !== null && team.day2Round2Score !== undefined;
-        const hasR3 = team.day2Round3Score !== null && team.day2Round3Score !== undefined;
-        if (!hasR1 && !hasR2 && !hasR3) return "no-score";
-        if ((hasR1 && !hasR2 && !hasR3) || (!hasR1 && hasR2 && !hasR3) || (!hasR1 && !hasR2 && hasR3)) return "partial";
-        if ((hasR1 && hasR2 && !hasR3) || (hasR1 && !hasR2 && hasR3) || (!hasR1 && hasR2 && hasR3)) return "partial";
-        if (hasR1 && hasR2 && hasR3) return "complete";
-        return "no-score";
-      }
+      // Only check day1Round1 and day1Round2 (no day selector, no round 3)
+      const hasR1 = team.day1Round1Score !== null && team.day1Round1Score !== undefined;
+      const hasR2 = team.day1Round2Score !== null && team.day1Round2Score !== undefined;
+      
+      if (!hasR1 && !hasR2) return "no-score";
+      if ((hasR1 && !hasR2) || (!hasR1 && hasR2)) return "partial";
+      if (hasR1 && hasR2) return "complete";
+      return "no-score";
     }
 
     // Robosports: placeholder logic (update when implemented)
@@ -628,26 +610,17 @@ export default function ScorerScreen({ navigation }: any) {
       return [{ label: "All Teams", value: "all" }];
     }
 
-    // For robo categories, different options based on selected day
+    // For robo categories (no day selector, just 2 rounds)
     if (judgeCategory === "robo-elem" || judgeCategory === "robo-junior" || judgeCategory === "robo-senior") {
-      if (selectedDay === 1) {
-        return [
-          { label: "All Teams", value: "all" },
-          { label: "No Scores Yet", value: "no-score" },
-          { label: "Partially Scored", value: "partial" },
-          { label: "Day 1 Complete", value: "complete" },
-        ];
-      } else {
-        return [
-          { label: "All Teams", value: "all" },
-          { label: "Day 1 Incomplete", value: "day1-incomplete" },
-          { label: "No Day 2 Scores", value: "no-score" },
-          { label: "Partially Scored", value: "partial" },
-          { label: "Day 2 Complete", value: "complete" },
-        ];
-      }
+      return [
+        { label: "All Teams", value: "all" },
+        { label: "No Scores Yet", value: "no-score" },
+        { label: "Partially Scored", value: "partial" },
+        { label: "Complete", value: "complete" },
+      ];
     }
 
+    // For future engineers
     return [
       { label: "All Teams", value: "all" },
       { label: "No Scores Yet", value: "no-score" },
@@ -693,11 +666,11 @@ export default function ScorerScreen({ navigation }: any) {
         return (
           <>
             <Text style={styles.scoreinputTitle}>
-              Day {selectedDay} - Round {scoringStep}
+              Round {scoringStep}
             </Text>
             <TextInput
               style={styles.scoreinput}
-              placeholder={`Enter Day ${selectedDay} Round ${scoringStep} Score`}
+              placeholder={`Enter Round ${scoringStep} Score`}
               keyboardType="numeric"
               value={inputScore}
               onChangeText={(text) =>
@@ -894,41 +867,27 @@ export default function ScorerScreen({ navigation }: any) {
 
   // Best score/time
   function getBestScoreAndTime(team: any) {
-    if (selectedDay === 1) {
-      const scores = [
-        { score: team.day1Round1Score, time: team.day1Round1Time },
-        { score: team.day1Round2Score, time: team.day1Round2Time },
-        { score: team.day1Round3Score, time: team.day1Round3Time }
-      ].filter(r => r.score != null);
-      
-      if (scores.length === 0) return { bestScore: null, bestTime: null, bestRound: null };
-      
-      const best = scores.reduce((best, current) => {
-        if (current.score > best.score) return current;
-        if (current.score === best.score && parseTimeString(current.time) < parseTimeString(best.time)) return current;
-        return best;
-      });
-      
-      const bestRound = scores.findIndex(s => s.score === best.score && s.time === best.time) + 1;
-      return { bestScore: best.score, bestTime: best.time, bestRound };
-    } else {
-      const scores = [
-        { score: team.day2Round1Score, time: team.day2Round1Time },
-        { score: team.day2Round2Score, time: team.day2Round2Time },
-        { score: team.day2Round3Score, time: team.day2Round3Time }
-      ].filter(r => r.score != null);
-      
-      if (scores.length === 0) return { bestScore: null, bestTime: null, bestRound: null };
-      
-      const best = scores.reduce((best, current) => {
-        if (current.score > best.score) return current;
-        if (current.score === best.score && parseTimeString(current.time) < parseTimeString(best.time)) return current;
-        return best;
-      });
-      
-      const bestRound = scores.findIndex(s => s.score === best.score && s.time === best.time) + 1;
-      return { bestScore: best.score, bestTime: best.time, bestRound };
-    }
+    const scores = [
+      { score: team.day1Round1Score, time: team.day1Round1Time, round: 1 },
+      { score: team.day1Round2Score, time: team.day1Round2Time, round: 2 }
+    ].filter(r => r.score != null);
+    
+    if (scores.length === 0) return { bestScore: null, bestTime: null, bestScoreRound: null, bestTimeRound: null };
+    
+    // Find best score (highest)
+    const bestScoreRound = scores.reduce((best, current) => 
+      current.score > best.score ? current : best
+    ).round;
+    
+    // Find best time (lowest)
+    const bestTimeRound = scores.reduce((best, current) => 
+      parseTimeString(current.time) < parseTimeString(best.time) ? current : best
+    ).round;
+    
+    const bestScoreValue = Math.max(...scores.map(s => s.score));
+    const bestTimeValue = scores.find(s => s.round === bestTimeRound)?.time;
+    
+    return { bestScore: bestScoreValue, bestTime: bestTimeValue, bestScoreRound, bestTimeRound };
   }
 
   // Helper function to parse time string
@@ -943,27 +902,18 @@ export default function ScorerScreen({ navigation }: any) {
 
   // Modal open for scoring
   const openScoreModal = (team: any) => {
-    if (getCardStatus(team) === "complete" || getCardStatus(team) === "day1-incomplete") return;
+    if (getCardStatus(team) === "complete") return;
     
     setScoringTeam(team);
     
-    // Determine which round to score next
-    if (selectedDay === 1) {
-      if (team.day1Round1Score === null || team.day1Round1Score === undefined) {
-        setScoringStep(1);
-      } else if (team.day1Round2Score === null || team.day1Round2Score === undefined) {
-        setScoringStep(2);
-      } else {
-        setScoringStep(3);
-      }
+    // Determine which round to score next (only 2 rounds for RoboMission)
+    if (team.day1Round1Score === null || team.day1Round1Score === undefined) {
+      setScoringStep(1);
+    } else if (team.day1Round2Score === null || team.day1Round2Score === undefined) {
+      setScoringStep(2);
     } else {
-      if (team.day2Round1Score === null || team.day2Round1Score === undefined) {
-        setScoringStep(1);
-      } else if (team.day2Round2Score === null || team.day2Round2Score === undefined) {
-        setScoringStep(2);
-      } else {
-        setScoringStep(3);
-      }
+      // All rounds completed
+      setScoringStep(1);
     }
     
     setInputScore("");
@@ -1015,21 +965,13 @@ export default function ScorerScreen({ navigation }: any) {
           day1Round1Time: scoringTeam.day1Round1Time ?? null,
           day1Round2Score: scoringTeam.day1Round2Score ?? null,
           day1Round2Time: scoringTeam.day1Round2Time ?? null,
-          day1Round3Score: scoringTeam.day1Round3Score ?? null,
-          day1Round3Time: scoringTeam.day1Round3Time ?? null,
-          day2Round1Score: scoringTeam.day2Round1Score ?? null,
-          day2Round1Time: scoringTeam.day2Round1Time ?? null,
-          day2Round2Score: scoringTeam.day2Round2Score ?? null,
-          day2Round2Time: scoringTeam.day2Round2Time ?? null,
-          day2Round3Score: scoringTeam.day2Round3Score ?? null,
-          day2Round3Time: scoringTeam.day2Round3Time ?? null,
         };
 
         const now = new Date();
-        const dayPrefix = `day${selectedDay}`;
-        const roundField = `${dayPrefix}Round${scoringStep}Score`;
-        const timeField = `${dayPrefix}Round${scoringStep}Time`;
-        const timestampField = `${dayPrefix}Round${scoringStep}ScoredAt`;
+        // Always use day1 for RoboMission (no day selector)
+        const roundField = `day1Round${scoringStep}Score`;
+        const timeField = `day1Round${scoringStep}Time`;
+        const timestampField = `day1Round${scoringStep}ScoredAt`;
         
         update[roundField] = Number(inputScore);
         update[timeField] = inputTime;
@@ -1689,60 +1631,7 @@ export default function ScorerScreen({ navigation }: any) {
               </View>
             )}
 
-            {/* Day Tabs for Robo Categories */}
-            {(judgeCategory === "robo-elem" || judgeCategory === "robo-junior" || judgeCategory === "robo-senior") && (
-              <View style={{ flexDirection: "row", marginBottom: 15 }}>
-                <TouchableOpacity
-                  style={[
-                    styles.fePill,
-                    selectedDay === 1 && styles.fePillActive,
-                  ]}
-                  onPress={() => {
-                    setSelectedDay(1);
-                    setCurrentPage(1);
-                    setStatusFilter("all");
-                  }}
-                >
-                  <Text style={[
-                    styles.fePillText,
-                    selectedDay === 1 && styles.fePillTextActive,
-                  ]}>Day 1</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[
-                    styles.fePill,
-                    selectedDay === 2 && styles.fePillActive,
-                    // Disable day 2 if no teams have completed day 1
-                    !teams.some(team => 
-                      team.day1Round1Score != null && 
-                      team.day1Round2Score != null && 
-                      team.day1Round3Score != null
-                    ) && { opacity: 0.5 }
-                  ]}
-                  onPress={() => {
-                    // Check if any team has completed day 1
-                    const hasDay1Complete = teams.some(team => 
-                      team.day1Round1Score != null && 
-                      team.day1Round2Score != null && 
-                      team.day1Round3Score != null
-                    );
-                    
-                    if (hasDay1Complete) {
-                      setSelectedDay(2);
-                      setCurrentPage(1);
-                      setStatusFilter("all");
-                    } else {
-                      Alert.alert("Day 2 Locked", "Complete Day 1 scoring for at least one team to unlock Day 2.");
-                    }
-                  }}
-                >
-                  <Text style={[
-                    styles.fePillText,
-                    selectedDay === 2 && styles.fePillTextActive,
-                  ]}>Day 2</Text>
-                </TouchableOpacity>
-              </View>
-            )}
+            {/* Day Tabs section removed - using only Round 1 and Round 2 for RoboMission */}
 
             {/* Search Bar */}
             <TextInput
@@ -1824,7 +1713,7 @@ export default function ScorerScreen({ navigation }: any) {
               renderItem={({ item }) => {
                 const status = getCardStatus(item);
                 const isComplete = status === "complete";
-                const { bestScore, bestTime, bestRound } = getBestScoreAndTime(item);
+                const { bestScore, bestTime, bestScoreRound, bestTimeRound } = getBestScoreAndTime(item);
 
                 // RoboMission: current UI
                 if (
@@ -1832,24 +1721,19 @@ export default function ScorerScreen({ navigation }: any) {
                   judgeCategory === "robo-junior" ||
                   judgeCategory === "robo-senior"
                 ) {
-                  const currentDayScores = selectedDay === 1 ? [
+                  const currentDayScores = [
                     { score: item.day1Round1Score, time: item.day1Round1Time },
-                    { score: item.day1Round2Score, time: item.day1Round2Time },
-                    { score: item.day1Round3Score, time: item.day1Round3Time }
-                  ] : [
-                    { score: item.day2Round1Score, time: item.day2Round1Time },
-                    { score: item.day2Round2Score, time: item.day2Round2Time },
-                    { score: item.day2Round3Score, time: item.day2Round3Time }
+                    { score: item.day1Round2Score, time: item.day1Round2Time }
                   ];
                   return (
                     <Pressable
-                      disabled={isComplete || status === "day1-incomplete"}
+                      disabled={isComplete}
                       onPress={() => openScoreModal(item)}
                       style={({ pressed }) => [
                         styles.teamCard,
                         {
                           backgroundColor: getCardColor(status),
-                          opacity: (isComplete || status === "day1-incomplete") ? 0.7 : 1,
+                          opacity: isComplete ? 0.7 : 1,
                         },
                         pressed && styles.buttonPressed,
                       ]}
@@ -1874,7 +1758,7 @@ export default function ScorerScreen({ navigation }: any) {
                                 Round {index + 1}:{" "}
                                 <Text
                                   style={
-                                    bestRound === index + 1
+                                    bestScoreRound === index + 1
                                       ? { color: "#388e3c", fontWeight: "bold" }
                                       : {}
                                   }
@@ -1891,7 +1775,7 @@ export default function ScorerScreen({ navigation }: any) {
                                 Time {index + 1}:{" "}
                                 <Text
                                   style={
-                                    bestRound === index + 1
+                                    bestTimeRound === index + 1
                                       ? { color: "#1976d2", fontWeight: "bold" }
                                       : {}
                                   }
@@ -1916,9 +1800,7 @@ export default function ScorerScreen({ navigation }: any) {
                           : status === "partial"
                           ? "Partially Scored"
                           : status === "complete"
-                          ? `Day ${selectedDay} Complete`
-                          : status === "day1-incomplete"
-                          ? "Complete Day 1 First"
+                          ? "Complete"
                           : "Complete"}
                       </Text>
                     </Pressable>
