@@ -135,6 +135,10 @@ export default function AllJudgesScreen({ navigation }: any) {
   const [deleteModalVisible, setDeleteModalVisible] = useState(false);
   const [judgeToDelete, setJudgeToDelete] = useState<any | null>(null);
 
+  //loading states
+  const [creatingJudge, setCreatingJudge] = useState(false);
+  const [deletingJudge, setDeletingJudge] = useState(false);
+
   // Initialize Firebase
   const auth = getAuth();
   const db = getFirestore();
@@ -233,6 +237,10 @@ export default function AllJudgesScreen({ navigation }: any) {
   }
 
   const createJudgeAccount = async () => {
+    if (creatingJudge) return;
+
+    setCreatingJudge(true);
+  
     try {
       // Validate input fields
       if (!username.trim()) {
@@ -345,7 +353,11 @@ export default function AllJudgesScreen({ navigation }: any) {
           doc.data().avatarUrl || getRandomAvatar(doc.data().username || ""),
       })) as JudgeUser[];
       setJudgeUsers(users);
+      setCreatingJudge(false);
     } catch (error) {
+
+      setCreatingJudge(false);
+
       if (error instanceof Error) {
         Alert.alert("Error", error.message);
         console.error("Error creating judge account:", error.message);
@@ -767,10 +779,18 @@ export default function AllJudgesScreen({ navigation }: any) {
 
             <View style={styles.buttonContainer}>
               <Pressable
-                style={styles.modalCreateButton}
-                onPress={createJudgeAccount}
+                  style={[
+                      styles.modalCreateButton,
+                      creatingJudge && { opacity: 0.7 }
+                  ]}
+                  onPress={createJudgeAccount}
+                  disabled={creatingJudge}
               >
-                <Text style={styles.buttonText}>{"Create"}</Text>
+                  {creatingJudge ? (
+                      <ActivityIndicator color="#fff" size="small" />
+                  ) : (
+                      <Text style={styles.buttonText}>Create</Text>
+                  )}
               </Pressable>
 
               <Pressable
@@ -801,7 +821,11 @@ export default function AllJudgesScreen({ navigation }: any) {
               {/* Cancel */}
               <Pressable
                 style={[styles.modalButton, { borderColor: "#432344" }]}
-                onPress={() => setDeleteModalVisible(false)}
+                onPress={() => {
+                  setDeletingJudge(false);
+                  setDeleteModalVisible(false);
+                  setJudgeToDelete(null);
+                }}
               >
                 <Text style={[styles.modalButtonText, { color: "#432344" }]}>
                   Cancel
@@ -812,27 +836,44 @@ export default function AllJudgesScreen({ navigation }: any) {
               <Pressable
                 style={[
                   styles.modalButton,
-                  { backgroundColor: "#AA0003", borderColor: "#AA0003" },
+                  {
+                    backgroundColor: "#AA0003",
+                    borderColor: "#AA0003",
+                    opacity: deletingJudge ? 0.7 : 1,
+                  },
                 ]}
+                disabled={deletingJudge}
                 onPress={async () => {
-                  if (!judgeToDelete) return;
+                  if (!judgeToDelete || deletingJudge) return;
+
+                  setDeletingJudge(true);
+
                   try {
                     await deleteDoc(
                       doc(FIREBASE_DB, "judge-users", judgeToDelete.id)
                     );
+
                     setJudges((prev) =>
                       prev.filter((j) => j.id !== judgeToDelete.id)
                     );
+
                     setDeleteModalVisible(false);
                     setJudgeToDelete(null);
                   } catch (e) {
                     console.error("Error deleting judge:", e);
+                    Alert.alert("Error", "Failed to delete judge.");
+                  } finally {
+                    setDeletingJudge(false);
                   }
                 }}
               >
-                <Text style={[styles.modalButtonText, { fontWeight: "bold" }]}>
-                  Delete
-                </Text>
+                {deletingJudge ? (
+                  <ActivityIndicator size="small" color="#fff" />
+                ) : (
+                  <Text style={[styles.modalButtonText, { fontWeight: "bold" }]}>
+                    Delete
+                  </Text>
+                )}
               </Pressable>
             </View>
           </View>
