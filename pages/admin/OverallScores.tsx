@@ -9,6 +9,8 @@ import {
   Dimensions,
   FlatList,
   TextInput,
+  Image,
+  Alert,
 } from "react-native";
 import {
   getFirestore,
@@ -17,7 +19,10 @@ import {
   onSnapshot,
   query,
   where,
+  doc,
+  getDoc,
 } from "firebase/firestore";
+import { getAuth } from "firebase/auth";
 import styles from "../../components/styles/judgeStyles/LeaderboardStyling";
 import { AntDesign, Feather } from "@expo/vector-icons";
 import DropDownPicker from "react-native-dropdown-picker";
@@ -219,6 +224,7 @@ export default function AdminOverallScores({ navigation }: any) {
   const [leaderboard, setLeaderboard] = useState<any[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [search, setSearch] = useState("");
+  const [userRole, setUserRole] = useState<string>("");
 
   // Event filter states
   const [events, setEvents] = useState<any[]>([]);
@@ -254,27 +260,26 @@ export default function AdminOverallScores({ navigation }: any) {
   }, [navigation, selectedCategory]);
 
   useEffect(() => {
-    const fetchCategories = async () => {
-      const db = getFirestore();
-      const categoriesSnap = await getDocs(collection(db, "categories"));
-      let cats = categoriesSnap.docs.map((doc) => ({
-        id: doc.id,
-        label: doc.data().label || doc.id,
-      }));
-
-      // Custom sort order
-      const order = ["robo-elem", "robo-junior", "robo-senior", "robosports", "fi-elem", "fi-junior", "fi-senior", "future-eng"];
-      cats = [
-        ...(order
-          .map((catId) => cats.find((cat) => cat.id === catId))
-          .filter(Boolean) as { id: string; label: any }[]),
-        ...cats.filter((cat) => !order.includes(cat.id)),
-      ];
-
-      setCategories(cats);
-      if (cats.length > 0) setSelectedCategory(cats[0].id);
+    // Use hardcoded categories instead of fetching from database
+    const categoryLabels: { [key: string]: string } = {
+      "robo-elem": "Robomission Elementary",
+      "robo-junior": "Robomission Junior",
+      "robo-senior": "Robomission Senior",
+      "robosports": "RoboSports",
+      "fi-elem": "Future Innovators Elementary",
+      "fi-junior": "Future Innovators Junior",
+      "fi-senior": "Future Innovators Senior",
+      "future-eng": "Future Engineers"
     };
-    fetchCategories();
+
+    const order = ["robo-elem", "robo-junior", "robo-senior", "robosports", "fi-elem", "fi-junior", "fi-senior", "future-eng"];
+    const cats = order.map((id) => ({
+      id,
+      label: categoryLabels[id] || id,
+    }));
+
+    setCategories(cats);
+    if (cats.length > 0) setSelectedCategory(cats[0].id);
   }, []);
 
   // Fetch events for filtering
@@ -292,6 +297,25 @@ export default function AdminOverallScores({ navigation }: any) {
       setEvents([{ id: "all", title: "All Events", date: "" }, ...eventsList]);
     };
     fetchEvents();
+
+    const fetchUserRole = async () => {
+      try {
+        const auth = getAuth();
+        const currentUser = auth.currentUser;
+        if (currentUser) {
+          const db = getFirestore();
+          const userDoc = await getDoc(doc(db, "admin-users", currentUser.uid));
+          if (userDoc.exists()) {
+            const userData = userDoc.data();
+            setUserRole(userData.role || "");
+          }
+        }
+      } catch (error) {
+        console.error("Failed to fetch admin role", error);
+      }
+    };
+
+    fetchUserRole();
   }, []);
 
   useEffect(() => {
@@ -347,7 +371,7 @@ export default function AdminOverallScores({ navigation }: any) {
 
             const leaderboardArr = Object.values(teamMap)
               .map((team: any) => categoryConfig.calculator(team))
-              .filter((team: any) => team.bestScore !== undefined && team.bestScore > 0)
+              .filter((team: any) => team.bestScore !== undefined && team.bestScore >= 0)
               .sort((a: any, b: any) => {
                 if ((selectedCategory === 'robo-elem' || selectedCategory === 'robo-junior' || selectedCategory === 'robo-senior') && 
                     a.combinedTime !== undefined && b.combinedTime !== undefined) {
@@ -386,10 +410,11 @@ export default function AdminOverallScores({ navigation }: any) {
         scoresSnap.forEach((doc) => {
           const data = doc.data();
           if (data.category === selectedCategory) {
-            scores.push({ id: doc.id, ...data });
+            scores.push({ id: doc.id, ...data, eventId: selectedEvent });
           }
         });
 
+        // Build leaderboard
         const teamMap: Record<string, any> = {};
         scores.forEach((score) => {
           const teamId = score.teamId;
@@ -406,8 +431,16 @@ export default function AdminOverallScores({ navigation }: any) {
 
         const leaderboardArr = Object.values(teamMap)
           .map((team: any) => categoryConfig.calculator(team))
-          .filter((team: any) => team.bestScore !== undefined && team.bestScore > 0)
+          .filter((team: any) => team.bestScore !== undefined && team.bestScore >= 0)
           .sort((a: any, b: any) => {
+            if ((selectedCategory === 'robo-elem' || selectedCategory === 'robo-junior' || selectedCategory === 'robo-senior') && 
+                a.combinedTime !== undefined && b.combinedTime !== undefined) {
+              if (b.bestScore !== a.bestScore) {
+                return b.bestScore - a.bestScore;
+              }
+              return (a.combinedTime || Infinity) - (b.combinedTime || Infinity);
+            }
+
             if (selectedCategory === 'future-eng') {
               if (b.bestScore !== a.bestScore) {
                 return b.bestScore - a.bestScore;
@@ -654,50 +687,49 @@ export default function AdminOverallScores({ navigation }: any) {
 
   return (
     <View style={{ flex: 1 }}>
-      {/* Sticky Tabs */}
-      <View style={stickyStyles.tabsContainer}>
-        <View style={{ marginBottom: 8 }}>
-          <TextInput
-            placeholder="Search teams..."
-            placeholderTextColor="#999999"
-            value={search}
-            onChangeText={setSearch}
-            style={[stickyStyles.searchInput, { maxWidth: 340, width: "100%" }]}
-          />
-        </View>
+      <View style={{ marginBottom: 8 }}>
+        <TextInput
+          placeholder="Search teams..."
+          placeholderTextColor="#999999"
+          value={search}
+          onChangeText={setSearch}
+          style={[stickyStyles.searchInput, { maxWidth: 340, width: "100%" }]}
+        />
+      </View>
 
-        {/* Event Filter Dropdown */}
-        <View style={{ marginBottom: 8, zIndex: 1000 }}>
-          <DropDownPicker
-            open={eventDropdownOpen}
-            setOpen={setEventDropdownOpen}
-            value={selectedEvent}
-            setValue={setSelectedEvent}
-            items={events.map(event => ({
-              label: event.id === "all" ? "All Events" : `${event.title}${event.date ? ` (${event.date})` : ''}`,
-              value: event.id,
-            }))}
-            placeholder="Select Event"
-            style={{
-              borderWidth: 1,
-              borderColor: "#e0e0e0",
-              backgroundColor: "#fafafa",
-              minHeight: 40,
-            }}
-            textStyle={{
-              fontSize: 14,
-            }}
-            dropDownContainerStyle={{
-              borderWidth: 1,
-              borderColor: "#e0e0e0",
-              backgroundColor: "#fafafa",
-            }}
-            listItemLabelStyle={{
-              fontSize: 14,
-            }}
-          />
-        </View>
+      {/* Event Filter Dropdown */}
+      <View style={{ marginBottom: 8, zIndex: 1000 }}>
+        <DropDownPicker
+          open={eventDropdownOpen}
+          setOpen={setEventDropdownOpen}
+          value={selectedEvent}
+          setValue={setSelectedEvent}
+          items={events.map(event => ({
+            label: event.id === "all" ? "All Events" : `${event.title}${event.date ? ` (${event.date})` : ''}`,
+            value: event.id,
+          }))}
+          placeholder="Select Event"
+          style={{
+            borderWidth: 1,
+            borderColor: "#e0e0e0",
+            backgroundColor: "#fafafa",
+            minHeight: 40,
+          }}
+          textStyle={{
+            fontSize: 14,
+          }}
+          dropDownContainerStyle={{
+            borderWidth: 1,
+            borderColor: "#e0e0e0",
+            backgroundColor: "#fafafa",
+          }}
+          listItemLabelStyle={{
+            fontSize: 14,
+          }}
+        />
+      </View>
 
+      <View style={{ marginBottom: 8 }}>
         <CategoryPills
           categories={categories}
           selectedCategory={selectedCategory}
@@ -706,15 +738,9 @@ export default function AdminOverallScores({ navigation }: any) {
       </View>
       
       {/* Leaderboard List */}
-      <View style={{ flex: 1, marginHorizontal: 10 }}>
+      <View style={{ flex: 1, marginHorizontal: 10, marginTop: 0 }}>
         {renderTableHeader()}
-        {scoresLoading ? (
-          <View
-            style={{ flex: 1, justifyContent: "center", alignItems: "center" }}
-          >
-            <ActivityIndicator size="large" />
-          </View>
-        ) : currentRecords.length === 0 ? (
+        {currentRecords.length === 0 ? (
           <View
             style={{
               flex: 1,
@@ -782,7 +808,7 @@ export default function AdminOverallScores({ navigation }: any) {
         </Text>
       </View>
     </View>
-  );
+);
 }
 
 const stickyStyles = StyleSheet.create({

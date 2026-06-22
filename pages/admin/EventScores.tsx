@@ -7,6 +7,9 @@ import {
   StyleSheet,
   FlatList,
   TextInput,
+  ScrollView,
+  Alert,
+  Dimensions,
 } from "react-native";
 import {
   getFirestore,
@@ -15,9 +18,11 @@ import {
   onSnapshot,
   query,
   where,
+  deleteDoc,
+  doc,
 } from "firebase/firestore";
 import styles from "../../components/styles/judgeStyles/LeaderboardStyling";
-import { AntDesign } from "@expo/vector-icons";
+import { AntDesign, Feather } from "@expo/vector-icons";
 import * as XLSX from "xlsx";
 import { useRoute } from "@react-navigation/native";
 
@@ -210,6 +215,7 @@ export default function EventScores({ navigation }: any) {
   const [currentPage, setCurrentPage] = useState(1);
   const [search, setSearch] = useState("");
   const [eventTitle, setEventTitle] = useState("");
+  const screenWidth = Dimensions.get('window').width;
 
   // Get category-specific configuration
   const categoryConfig = getCategoryFields(category || '');
@@ -276,6 +282,8 @@ export default function EventScores({ navigation }: any) {
           if (teamId) {
             if (!teamMap[teamId]) {
               teamMap[teamId] = {
+                // Firestore document id (must not be overwritten by fields coming from data)
+                scoreDocId: doc.id,
                 teamName: data.teamName || "",
                 teamId: teamId,
                 ...data, // Include all fields from the document
@@ -398,6 +406,15 @@ export default function EventScores({ navigation }: any) {
   const endIndex = startIndex + RECORDS_PER_PAGE;
   const currentRecords = filteredLeaderboard.slice(startIndex, endIndex);
 
+  const getTableMinWidth = () => {
+    const screenWidth = Dimensions.get('window').width;
+    if (screenWidth > 1024) return 'auto'; // Desktop
+    if (category === 'robo-elem' || category === 'robo-junior' || category === 'robo-senior') return 950;
+    if (category === 'future-eng') return 800;
+    if (category?.startsWith('fi-')) return 600;
+    return 500;
+  };
+
   const handleNextPage = () => {
     if (currentPage < totalPages) setCurrentPage(currentPage + 1);
   };
@@ -405,18 +422,81 @@ export default function EventScores({ navigation }: any) {
     if (currentPage > 1) setCurrentPage(currentPage - 1);
   };
 
-  // Render different table headers based on category
   const renderTableHeader = () => {
+    const screenWidth = Dimensions.get('window').width;
+    const isDesktop = screenWidth > 1024;
+    const headerMinWidth = !isDesktop ? getTableMinWidth() : undefined;
     return (
-      <View style={stickyStyles.header}>
-        <Text style={stickyStyles.heading}>Team Name</Text>
+      <View style={[stickyStyles.header, headerMinWidth && { minWidth: headerMinWidth }]}>
+        <Text style={[stickyStyles.heading, { minWidth: 120, flex: 0 }]}>Team Name</Text>
         {categoryConfig.headers.map((header, index) => (
-          <Text key={index} style={[stickyStyles.heading, stickyStyles.align]}>
+          <Text key={index} style={[stickyStyles.heading, stickyStyles.align, { minWidth: 70, flex: 0 }]}>
             {header}
           </Text>
         ))}
+        <Text style={[stickyStyles.heading, { minWidth: 50, flex: 0, textAlign: 'center' }]}>Action</Text>
       </View>
     );
+  };
+
+  const confirmDeleteScore = (score: any) => {
+    const docId = score?.scoreDocId ?? score?.id;
+    if (!docId) {
+      Alert.alert("Delete Score", "This score cannot be deleted (missing ID).");
+      return;
+    }
+
+    Alert.alert(
+      "Confirm Delete",
+      `Are you sure you want to delete the score for ${score.teamName || "this team"}? This action cannot be undone.`,
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Yes, Delete",
+          style: "destructive",
+          onPress: () => deleteScore(score),
+        },
+      ]
+    );
+  };
+
+  const deleteScore = async (score: any) => {
+    if (!eventId) {
+      Alert.alert("Delete failed", "Event ID is missing.");
+      return;
+    }
+
+    // Prefer the Firestore document id stored as scoreDocId.
+    const docId = score?.scoreDocId ?? score?.id;
+
+    if (!docId) {
+      Alert.alert(
+        "Delete failed",
+        `Score document id is missing. (scoreDocId=${String(score?.scoreDocId)} id=${String(score?.id)})`
+      );
+      return;
+    }
+
+    try {
+      // Extra safety: re-fetch the doc before deleting (avoids wrong IDs silently failing).
+      const db = getFirestore();
+      const scoreDocRef = doc(db, "events", eventId, "scores", docId);
+      const scoreDocSnap = await getDocs(query(collection(db, "events", eventId, "scores"), where("__name__", "==", docId)));
+
+      if (scoreDocSnap.empty) {
+        Alert.alert(
+          "Delete failed",
+          `Firestore doc not found for id=${String(docId)} under events/${String(eventId)}/scores`
+        );
+        return;
+      }
+
+      await deleteDoc(scoreDocRef);
+      Alert.alert("Success", "Score deleted successfully.");
+    } catch (error) {
+      console.error("Delete failed:", error);
+      Alert.alert("Delete failed", "Unable to delete the score. Please try again.");
+    }
   };
 
   // Render different table rows based on category
@@ -426,107 +506,118 @@ export default function EventScores({ navigation }: any) {
     
     if (category === 'future-eng') {
       return (
-        <View style={stickyStyles.row}>
-          <Text style={stickyStyles.cell}>
+        <View style={[stickyStyles.row, { minWidth: 800 }]}>
+          <Text style={[stickyStyles.cell, { minWidth: 120, flex: 0 }]}>
             {rankDisplay} {item.teamName}
           </Text>
-          <Text style={[stickyStyles.cell, { textAlign: "center", fontSize: 12 }]}>
+          <Text style={[stickyStyles.cell, { textAlign: "center", fontSize: 12, minWidth: 70, flex: 0 }]}>
             {item.openScore1 ?? "N/A"}
           </Text>
-          <Text style={[stickyStyles.cell, { textAlign: "center", fontSize: 12 }]}>
+          <Text style={[stickyStyles.cell, { textAlign: "center", fontSize: 12, minWidth: 70, flex: 0 }]}>
             {item.openScore2 ?? "N/A"}
           </Text>
-          <Text style={[stickyStyles.cell, { textAlign: "center", fontSize: 12 }]}>
+          <Text style={[stickyStyles.cell, { textAlign: "center", fontSize: 12, minWidth: 80, flex: 0 }]}>
             {item.obstacleScore1 ?? "N/A"}
           </Text>
-          <Text style={[stickyStyles.cell, { textAlign: "center", fontSize: 12 }]}>
+          <Text style={[stickyStyles.cell, { textAlign: "center", fontSize: 12, minWidth: 80, flex: 0 }]}>
             {item.obstacleScore2 ?? "N/A"}
           </Text>
-          <Text style={[stickyStyles.cell, { textAlign: "center", fontSize: 12 }]}>
+          <Text style={[stickyStyles.cell, { textAlign: "center", fontSize: 12, minWidth: 50, flex: 0 }]}>
             {item.docScore ?? "N/A"}
           </Text>
-          <Text style={[stickyStyles.cell, { textAlign: "center", fontSize: 16, fontWeight: "bold" }]}>
+          <Text style={[stickyStyles.cell, { textAlign: "center", fontSize: 14, fontWeight: "bold", minWidth: 70, flex: 0, color: "#1976d2" }]}>
             {item.bestScore}
-            {item.totalTime ? `\n(${item.totalTime}s)` : ''}
           </Text>
+          <TouchableOpacity style={[stickyStyles.cell, { justifyContent: "center", alignItems: "center", minWidth: 50, flex: 0 }]} onPress={() => confirmDeleteScore(item)}>
+            <Feather name="trash-2" size={16} color="#AA3D3F" />
+          </TouchableOpacity>
         </View>
       );
     } else if (category?.startsWith('fi-')) {
       return (
-        <View style={stickyStyles.row}>
-          <Text style={stickyStyles.cell}>
+        <View style={[stickyStyles.row, { minWidth: 600 }]}>
+          <Text style={[stickyStyles.cell, { minWidth: 130, flex: 0 }]}>
             {rankDisplay} {item.teamName}
           </Text>
-          <Text style={[stickyStyles.cell, { textAlign: "center", fontSize: 14 }]}>
+          <Text style={[stickyStyles.cell, { textAlign: "center", fontSize: 14, minWidth: 90, flex: 0 }]}>
             {item.projectInnovation ?? "N/A"}
           </Text>
-          <Text style={[stickyStyles.cell, { textAlign: "center", fontSize: 14 }]}>
+          <Text style={[stickyStyles.cell, { textAlign: "center", fontSize: 14, minWidth: 90, flex: 0 }]}>
             {item.roboticSolution ?? "N/A"}
           </Text>
-          <Text style={[stickyStyles.cell, { textAlign: "center", fontSize: 14 }]}>
+          <Text style={[stickyStyles.cell, { textAlign: "center", fontSize: 14, minWidth: 100, flex: 0 }]}>
             {item.presentationSpirit ?? "N/A"}
           </Text>
-          <Text style={[stickyStyles.cell, { textAlign: "center", fontSize: 16, fontWeight: "bold" }]}>
+          <Text style={[stickyStyles.cell, { textAlign: "center", fontSize: 16, fontWeight: "bold", minWidth: 70, flex: 0, color: "#1976d2" }]}>
             {item.bestScore}
           </Text>
+          <TouchableOpacity style={[stickyStyles.cell, { justifyContent: "center", alignItems: "center", minWidth: 50, flex: 0 }]} onPress={() => confirmDeleteScore(item)}>
+            <Feather name="trash-2" size={16} color="#AA3D3F" />
+          </TouchableOpacity>
         </View>
       );
       } else if (category === 'robo-elem' || category === 'robo-junior' || category === 'robo-senior') {
       return (
-        <View style={stickyStyles.row}>
-          <Text style={stickyStyles.cell}>
+        <View style={[stickyStyles.row, { minWidth: 950 }]}>
+          <Text style={[stickyStyles.cell, { minWidth: 120, flex: 0 }]}>
             {rankDisplay} {item.teamName}
           </Text>
           {/* Day 1 Rounds */}
-          <Text style={[stickyStyles.cell, { textAlign: "center", fontSize: 10 }]}>
+          <Text style={[stickyStyles.cell, { textAlign: "center", fontSize: 10, minWidth: 60, flex: 0 }]}>
             {item.day1Round1Score ?? "N/A"}
           </Text>
-          <Text style={[stickyStyles.cell, { textAlign: "center", fontSize: 10 }]}>
+          <Text style={[stickyStyles.cell, { textAlign: "center", fontSize: 10, minWidth: 60, flex: 0 }]}>
             {item.day1Round2Score ?? "N/A"}
           </Text>
-          <Text style={[stickyStyles.cell, { textAlign: "center", fontSize: 10 }]}>
+          <Text style={[stickyStyles.cell, { textAlign: "center", fontSize: 10, minWidth: 60, flex: 0 }]}>
             {item.day1Round3Score ?? "N/A"}
           </Text>
           {/* Day 2 Rounds */}
-          <Text style={[stickyStyles.cell, { textAlign: "center", fontSize: 10 }]}>
+          <Text style={[stickyStyles.cell, { textAlign: "center", fontSize: 10, minWidth: 60, flex: 0 }]}>
             {item.day2Round1Score ?? "N/A"}
           </Text>
-          <Text style={[stickyStyles.cell, { textAlign: "center", fontSize: 10 }]}>
+          <Text style={[stickyStyles.cell, { textAlign: "center", fontSize: 10, minWidth: 60, flex: 0 }]}>
             {item.day2Round2Score ?? "N/A"}
           </Text>
-          <Text style={[stickyStyles.cell, { textAlign: "center", fontSize: 10 }]}>
+          <Text style={[stickyStyles.cell, { textAlign: "center", fontSize: 10, minWidth: 60, flex: 0 }]}>
             {item.day2Round3Score ?? "N/A"}
           </Text>
           {/* Day 1 Best */}
-          <Text style={[stickyStyles.cell, { textAlign: "center", fontSize: 12, fontWeight: "bold", color: "#2d5a3d" }]}>
+          <Text style={[stickyStyles.cell, { textAlign: "center", fontSize: 12, fontWeight: "bold", color: "#2d5a3d", minWidth: 65, flex: 0 }]}>
             {item.breakdown?.day1BestScore ?? "N/A"}
           </Text>
           {/* Day 2 Best */}
-          <Text style={[stickyStyles.cell, { textAlign: "center", fontSize: 12, fontWeight: "bold", color: "#2d5a3d" }]}>
+          <Text style={[stickyStyles.cell, { textAlign: "center", fontSize: 12, fontWeight: "bold", color: "#2d5a3d", minWidth: 65, flex: 0 }]}>
             {item.breakdown?.day2BestScore ?? "N/A"}
           </Text>
           {/* Total */}
-          <Text style={[stickyStyles.cell, { textAlign: "center", fontSize: 16, fontWeight: "bold", color: "#1976d2" }]}>
+          <Text style={[stickyStyles.cell, { textAlign: "center", fontSize: 14, fontWeight: "bold", color: "#1976d2", minWidth: 70, flex: 0 }]}>
             {item.bestScore}
           </Text>
+          <TouchableOpacity style={[stickyStyles.cell, { justifyContent: "center", alignItems: "center", minWidth: 50, flex: 0 }]} onPress={() => confirmDeleteScore(item)}>
+            <Feather name="trash-2" size={16} color="#AA3D3F" />
+          </TouchableOpacity>
         </View>
       );
     } else {
       // Default robomissions format
       return (
-        <View style={stickyStyles.row}>
-          <Text style={stickyStyles.cell}>
+        <View style={[stickyStyles.row, { minWidth: 500 }]}>
+          <Text style={[stickyStyles.cell, { minWidth: 120, flex: 0 }]}>
             {rankDisplay} {item.teamName}
           </Text>
-          <Text style={[stickyStyles.cell, { textAlign: "center", fontSize: 18 }]}>
+          <Text style={[stickyStyles.cell, { textAlign: "center", fontSize: 16, minWidth: 70, flex: 0 }]}>
             {item.round1Score ?? "N/A"}
           </Text>
-          <Text style={[stickyStyles.cell, { textAlign: "center", fontSize: 18 }]}>
+          <Text style={[stickyStyles.cell, { textAlign: "center", fontSize: 16, minWidth: 70, flex: 0 }]}>
             {item.round2Score ?? "N/A"}
           </Text>
-          <Text style={[stickyStyles.cell, { textAlign: "center", fontSize: 16, fontWeight: "bold" }]}>
+          <Text style={[stickyStyles.cell, { textAlign: "center", fontSize: 16, fontWeight: "bold", minWidth: 70, flex: 0, color: "#1976d2" }]}>
             {item.bestScore}
           </Text>
+          <TouchableOpacity style={[stickyStyles.cell, { justifyContent: "center", alignItems: "center", minWidth: 50, flex: 0 }]} onPress={() => confirmDeleteScore(item)}>
+            <Feather name="trash-2" size={16} color="#AA3D3F" />
+          </TouchableOpacity>
         </View>
       );
     }
@@ -564,24 +655,36 @@ export default function EventScores({ navigation }: any) {
       </View>
 
       {/* Scores List */}
-      <View style={{ flex: 1, marginHorizontal: 10 }}>
-        {renderTableHeader()}
+      <View style={{ flex: 1 }}>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={true}
+          scrollEventThrottle={16}
+          nestedScrollEnabled={true}
+          contentContainerStyle={{ alignItems: 'flex-start' }}
+        >
+          <View style={{ marginHorizontal: 10, marginRight: 20, minWidth: getTableMinWidth() }}>
+            {renderTableHeader()}
 
-        {scoresLoading ? (
-          <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
-            <ActivityIndicator size="large" />
+            {scoresLoading ? (
+              <View style={{ height: 300, justifyContent: "center", alignItems: "center" }}>
+                <ActivityIndicator size="large" />
+              </View>
+            ) : currentRecords.length === 0 ? (
+              <View style={{ height: 300, justifyContent: "center", alignItems: "center" }}>
+                <Text style={{ textAlign: "center" }}>No scores yet for this event!</Text>
+              </View>
+            ) : (
+              <FlatList
+                data={currentRecords}
+                keyExtractor={(item) => `${item.teamId}-${item.scoreDocId ?? item.id}`}
+
+                scrollEnabled={false}
+                renderItem={({ item, index }) => renderTableRow(item, index)}
+              />
+            )}
           </View>
-        ) : currentRecords.length === 0 ? (
-          <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
-            <Text style={{ textAlign: "center" }}>No scores yet for this event!</Text>
-          </View>
-        ) : (
-          <FlatList
-            data={currentRecords}
-            keyExtractor={(item) => item.teamId}
-            renderItem={({ item, index }) => renderTableRow(item, index)}
-          />
-        )}
+        </ScrollView>
       </View>
 
       {/* Pagination Controls */}
@@ -671,38 +774,42 @@ const stickyStyles = StyleSheet.create({
   },
   header: {
     flexDirection: "row",
-    justifyContent: "space-between",
-    padding: 10,
     backgroundColor: "#432344",
     borderBottomWidth: 1,
     borderColor: "#eee",
     borderTopLeftRadius: 10,
     borderTopRightRadius: 10,
+    alignItems: "center",
+    flexWrap: "nowrap",
   },
   heading: {
-    flex: 1,
     fontSize: 12,
     color: "#fff",
     fontWeight: "bold",
+    minWidth: 90,
+    paddingHorizontal: 5,
+    paddingVertical: 5,
   },
   align: {
     textAlign: "center",
   },
   row: {
     flexDirection: "row",
-    justifyContent: "space-between",
     marginVertical: 1,
     marginHorizontal: 2,
     elevation: 1,
     backgroundColor: "#fff",
-    padding: 10,
     borderBottomWidth: 1,
     borderColor: "#eee",
+    alignItems: "center",
+    flexWrap: "nowrap",
   },
   cell: {
-    flex: 1,
     textAlign: "left",
     fontSize: 12,
+    paddingHorizontal: 5,
+    paddingVertical: 5,
+    justifyContent: "center",
   },
   searchInput: {
     borderWidth: 1,

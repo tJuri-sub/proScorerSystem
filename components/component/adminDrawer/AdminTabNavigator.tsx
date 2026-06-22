@@ -28,7 +28,7 @@ export default function AdminTabNavigator() {
         component={HomeScreenAdmin}
         options={{
           headerShown: true,
-          headerTitle: "Home Admin",
+          headerTitle: "Home",
           headerTitleAlign: "center",
           tabBarIcon: ({ color, size }) => (
             <Entypo name="home" size={size} color={color} />
@@ -36,7 +36,7 @@ export default function AdminTabNavigator() {
         }}
       />
       <Tab.Screen
-        name="OverallScores"
+        name="Scores"
         component={OverallScoresScreen}
         options={{
           headerShown: true,
